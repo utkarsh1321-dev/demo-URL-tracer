@@ -162,6 +162,32 @@ export async function uploadPCAP(file) {
   return request('/upload/pcap', { method: 'POST', headers: { ...auth }, body: form });
 }
 
+/**
+ * GET /api/pcap/history
+ * Returns paginated PCAP analysis history for the authenticated user.
+ */
+export async function getPCAPHistory({ page = 1, pageSize = 20 } = {}) {
+  const params = new URLSearchParams({ page, page_size: pageSize });
+  return request(`/pcap/history?${params}`);
+}
+
+/**
+ * GET /api/pcap/history/:id
+ * Returns full detail for one PCAP analysis including per-URL records.
+ */
+export async function getPCAPDetail(id, { page = 1, pageSize = 50 } = {}) {
+  const params = new URLSearchParams({ page, page_size: pageSize });
+  return request(`/pcap/history/${id}?${params}`);
+}
+
+/**
+ * DELETE /api/pcap/history/:id
+ * Delete a PCAP analysis and all its records.
+ */
+export async function deletePCAPAnalysis(id) {
+  return request(`/pcap/history/${id}`, { method: 'DELETE' });
+}
+
 // ─── Exports ───────────────────────────────────────────────────────────────────
 /**
  * GET /api/export/csv

@@ -22,7 +22,7 @@ from fastapi.responses import JSONResponse
 from database import engine
 from models import Base
 
-from api import dashboard, attacks, ips, upload, export, ml, analyze
+from api import dashboard, attacks, ips, upload, export, ml, analyze, pcap
 
 # ─────────────────────────────────────────────
 # Logging — structured, no secrets
@@ -133,6 +133,7 @@ app.include_router(upload.router,    prefix="/api")
 app.include_router(export.router,    prefix="/api")
 app.include_router(ml.router,        prefix="/api")
 app.include_router(analyze.router,   prefix="/api")   # Phase 3-5: URL analysis engine
+app.include_router(pcap.router,      prefix="/api")   # Phase 7: PCAP history
 
 
 # ─────────────────────────────────────────────
@@ -144,7 +145,7 @@ def root():
     return {
         "status":  "online",
         "system":  "URL Tracer -- Cyber Attack Detection Platform",
-        "version": "1.3.0",
+        "version": "1.4.0",
         "docs":    "/docs",
         "redoc":   "/redoc",
     }
@@ -152,4 +153,4 @@ def root():
 
 @app.get("/api/health", tags=["Health"])
 def health_check():
-    return {"status": "healthy", "version": "1.3.0"}
+    return {"status": "healthy", "version": "1.4.0"}
