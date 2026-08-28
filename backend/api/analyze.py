@@ -20,6 +20,8 @@ from auth import CurrentUser, get_current_user
 from db_utils import set_rls_user
 from analysis.engine import analyze_url
 from analysis.validator import URLValidationError
+from analysis.features import extract_features, features_to_ml_vector
+from analysis.url_model import url_predict
 
 router = APIRouter()
 
@@ -85,20 +87,40 @@ def analyze_url_endpoint(
     """
     Analyse a URL for phishing and malicious content.
 
-    The engine performs:
-    - Validation and normalization
-    - 28-feature static extraction
-    - 18 rule-based checks
-    - Risk score computation
+    Pipeline:
+    1. Validate + normalize URL
+    2. Extract 28 URL features (Phase 3 schema)
+    3. ML model prediction (Phase 4 GradientBoosting, blended with rules)
+    4. 18 static rule checks
+    5. Risk score computation (60% rules + 40% ML)
 
     Result is persisted to the user's analysis history.
     """
     uid = current_user.id
     set_rls_user(db, uid)
 
-    # Run the auth-free, DB-free analysis engine
     try:
-        result = analyze_url(req.url)
+        from analysis.validator import validate_and_normalize
+        normalized_url = validate_and_normalize(req.url)
+    except URLValidationError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+    # Phase 4: ML prediction (optional — graceful degradation if model unavailable)
+    ml_pred, ml_conf = None, None
+    try:
+        feats = extract_features(normalized_url)
+        vec   = features_to_ml_vector(feats)
+        ml_pred, ml_conf = url_predict(vec)
+    except Exception:
+        pass  # model unavailable — engine uses rule-based scoring only
+
+    # Run the auth-free, DB-free analysis engine (blends ML + rules)
+    try:
+        result = analyze_url(
+            req.url,
+            ml_prediction=ml_pred,
+            ml_confidence=ml_conf,
+        )
     except URLValidationError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except Exception:

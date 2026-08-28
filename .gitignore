@@ -101,6 +101,25 @@ build/
 dist/
 *.egg
 
-# ─── Sample / test data ───────────────────────────────────────────────────────
+# --- Sample / test data ---
 # Remove this line if you intentionally want to keep test uploads in git
 backend/sample_data/
+
+# --- Phase 4: ML training data and model binaries ---
+# Raw datasets are large (420K+ rows) and not needed in the repo
+ML/data/raw/*.csv
+ML/data/raw/*.json
+ML/data/processed/
+
+# Trained model binaries (large, reproducible from pipeline)
+ML/models/*.pkl
+ML/models/*.joblib
+
+# ML cache and temp files
+ML/**/__pycache__/
+ML/**/*.pyc
+
+# Keep these tracked:
+# ML/models/model_info.json   <- model metadata (small JSON, tracked)
+# ML/models/.gitkeep          <- directory marker
+# ML/data/raw/.gitkeep        <- directory marker

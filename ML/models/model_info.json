@@ -1,0 +1,127 @@
+{
+  "model_version": "urltracer-v1.0.0",
+  "feature_version": "urltracer-v1",
+  "algorithm": "GradientBoosting",
+  "num_features": 28,
+  "feature_names": [
+    "url_length",
+    "hostname_length",
+    "path_length",
+    "query_length",
+    "num_dots",
+    "num_hyphens",
+    "num_underscores",
+    "num_slashes",
+    "num_at_symbols",
+    "num_digits",
+    "num_special_chars",
+    "num_subdomains",
+    "path_depth",
+    "query_param_count",
+    "num_encoded_chars",
+    "has_https",
+    "is_ip_host",
+    "has_double_encoding",
+    "has_redirect_param",
+    "has_suspicious_tld",
+    "has_brand_keyword",
+    "has_at_in_url",
+    "has_punycode",
+    "has_data_uri",
+    "has_base64_in_query",
+    "has_suspicious_keyword",
+    "url_entropy",
+    "hostname_digit_ratio"
+  ],
+  "label_names": [
+    "BENIGN",
+    "PHISHING",
+    "MALWARE"
+  ],
+  "training_date": "2026-08-28T15:17:12.617147+00:00",
+  "seed": 42,
+  "dataset": {
+    "name": "Malicious URL Detection Dataset",
+    "source": "https://github.com/faizann24/Using-Machine-Learning-To-Detect-Malicious-URLs",
+    "license": "MIT License",
+    "version": "1",
+    "rows_downloaded": 420464
+  },
+  "data_split": {
+    "train_size": 29056,
+    "val_size": 6226,
+    "test_size": 6226,
+    "total": 41508,
+    "class_distribution": {
+      "BENIGN": 31131,
+      "PHISHING": 10377
+    },
+    "train_dist": {
+      "BENIGN": 21792,
+      "PHISHING": 7264
+    },
+    "val_dist": {
+      "BENIGN": 4685,
+      "PHISHING": 1541
+    },
+    "test_dist": {
+      "PHISHING": 1572,
+      "BENIGN": 4654
+    },
+    "seed": 42
+  },
+  "validation_results": {
+    "LogisticRegression": {
+      "val_acc": 0.8067780276260842,
+      "val_f1": 0.660971636714826,
+      "train_time_s": 1.2439902000005532
+    },
+    "RandomForest": {
+      "val_acc": 0.8633151300995824,
+      "val_f1": 0.8296729906563478,
+      "train_time_s": 2.337953000000198
+    },
+    "GradientBoosting": {
+      "val_acc": 0.8851590106007067,
+      "val_f1": 0.8343130495143292,
+      "train_time_s": 11.435927600001378
+    }
+  },
+  "test_evaluation": {
+    "accuracy": 0.8815,
+    "f1_macro": 0.8325,
+    "f1_weighted": 0.8773,
+    "precision_macro": 0.8601,
+    "recall_macro": 0.8131,
+    "roc_auc": 0.9276,
+    "per_class": {
+      "BENIGN": {
+        "precision": 0.8965,
+        "recall": 0.9512,
+        "f1": 0.9231,
+        "support": 4654,
+        "FPR": 0.3251,
+        "FNR": 0.0488
+      },
+      "PHISHING": {
+        "precision": 0.8238,
+        "recall": 0.6749,
+        "f1": 0.742,
+        "support": 1572,
+        "FPR": 0.0488,
+        "FNR": 0.3251
+      }
+    },
+    "confusion_matrix": [
+      [
+        4427,
+        227
+      ],
+      [
+        511,
+        1061
+      ]
+    ]
+  },
+  "inference_time_ms_per_url": 0.0106
+}
