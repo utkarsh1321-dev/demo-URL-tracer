@@ -104,11 +104,12 @@ export async function getTopSourceIPs(limit = 6) {
 // ─── URL Analysis (Phase 3) ────────────────────────────────────────────────────
 
 /**
- * POST /api/analyze/url
+ * POST /api/analyze
  * Analyse a single URL for phishing/malicious content.
+ * Primary endpoint as of Phase 5.
  */
 export async function analyzeURL(url) {
-  return request('/analyze/url', {
+  return request('/analyze', {
     method: 'POST',
     body: JSON.stringify({ url }),
   });

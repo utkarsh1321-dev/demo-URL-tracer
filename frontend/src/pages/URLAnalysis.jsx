@@ -104,7 +104,12 @@ export default function URLAnalysis() {
       setResult(data);
       loadHistory(); // refresh history
     } catch (err) {
-      setError(err?.message ?? 'Analysis failed. Please try again.');
+      // Surface rate-limit errors clearly
+      if (err?.status === 429 || (err?.message || '').includes('Rate limit')) {
+        setError('Rate limit reached (30 analyses/min). Please wait a moment before trying again.');
+      } else {
+        setError(err?.message ?? 'Analysis failed. Please try again.');
+      }
     } finally {
       setBusy(false);
     }
