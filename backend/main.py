@@ -1,8 +1,7 @@
 """
 main.py — FastAPI application entry point.
 
-URL-Based Cyber Attack Detection & IP Intelligence System
-DEMO PROTOTYPE — All data is SYNTHETIC. Not connected to live traffic.
+URL Tracer — URL-Based Phishing & Cyber Attack Detection Platform
 
 Run with:
     uvicorn main:app --reload --host 0.0.0.0 --port 8000
@@ -14,9 +13,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from database import engine, SessionLocal
+from database import engine
 from models import Base
-from utils.seed import seed_database
 
 from api import dashboard, attacks, ips, upload, export, ml
 
@@ -27,19 +25,10 @@ from api import dashboard, attacks, ips, upload, export, ml
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create all tables
+    # Create all tables on startup (no-op if already exist)
     Base.metadata.create_all(bind=engine)
 
-    # Seed demo data if database is empty
-    db = SessionLocal()
-    try:
-        seed_database(db)
-    finally:
-        db.close()
-
     yield  # server is running
-
-    # (Shutdown logic can go here if needed)
 
 
 # ─────────────────────────────────────────────
@@ -47,25 +36,23 @@ async def lifespan(app: FastAPI):
 # ─────────────────────────────────────────────
 
 app = FastAPI(
-    title="URL-Based Cyber Attack Detection & IP Intelligence System",
+    title="URL Tracer — Cyber Attack Detection Platform",
     description=(
-        "DEMO PROTOTYPE — Demonstrates detection of URL-based cyberattacks "
-        "from synthetic HTTP/IP data. All data is simulated. "
-        "Not connected to live traffic, real credentials, or real victims."
+        "URL-based phishing and cyber attack detection. "
+        "Analyzes HTTP traffic, PCAP files, and URLs for malicious patterns "
+        "using rule-based detection and ML classification."
     ),
-    version="1.0.0",
-    contact={"name": "Hackathon Team", "email": "demo@example.com"},
-    license_info={"name": "Demo Only"},
+    version="1.1.0",
     lifespan=lifespan,
 )
 
 # ─────────────────────────────────────────────
-# CORS — allow all origins for the hackathon demo
+# CORS — locked in Phase 9 to production origins
 # ─────────────────────────────────────────────
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],      # TODO Phase 9: restrict to production frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -104,8 +91,8 @@ app.include_router(ml.router, prefix="/api")
 def root():
     return {
         "status": "online",
-        "system": "URL-Based Cyber Attack Detection & IP Intelligence System",
-        "mode": "DEMO — Synthetic data only",
+        "system": "URL Tracer — Cyber Attack Detection Platform",
+        "version": "1.1.0",
         "docs": "/docs",
         "redoc": "/redoc",
     }
@@ -113,4 +100,4 @@ def root():
 
 @app.get("/api/health", tags=["Health"])
 def health_check():
-    return {"status": "healthy", "version": "1.0.0"}
+    return {"status": "healthy", "version": "1.1.0"}

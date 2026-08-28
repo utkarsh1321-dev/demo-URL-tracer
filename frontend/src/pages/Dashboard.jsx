@@ -19,22 +19,13 @@ import SeverityChart   from '../components/charts/SeverityChart.jsx';
 import Timeline        from '../components/charts/Timeline.jsx';
 import TopIPsChart     from '../components/charts/TopIPsChart.jsx';
 
-// ── Live Activity Stream data ────────────────────────────────
-const STREAM_EVENTS = [
-  { type: 'SQL Injection',  ip: '192.168.1.25', time: '03:42:18', sev: 'CRITICAL' },
-  { type: 'XSS Attack',     ip: '10.0.0.14',    time: '03:41:52', sev: 'HIGH'     },
-  { type: 'Dir Traversal',  ip: '172.16.0.8',   time: '03:41:05', sev: 'MEDIUM'   },
-  { type: 'PCAP Analyzed',  ip: '—',            time: '03:40:31', sev: 'LOW'      },
-  { type: 'Brute Force',    ip: '192.168.0.55', time: '03:39:47', sev: 'HIGH'     },
-  { type: 'SSRF Probe',     ip: '10.10.10.12',  time: '03:38:22', sev: 'HIGH'     },
-];
-
 const SEV_DOT = {
   CRITICAL: '#f87171',
   HIGH:     '#fb923c',
   MEDIUM:   '#fbbf24',
   LOW:      '#4ade80',
 };
+
 
 // ── Threat Detail Drawer ─────────────────────────────────────
 function ThreatDrawer({ attack, onClose }) {
@@ -158,14 +149,8 @@ function ThreatDrawer({ attack, onClose }) {
             </div>
           </div>
 
-          {/* Disclaimer */}
-          <div
-            className="flex items-start gap-2 rounded-lg px-3 py-2.5 text-xs"
-            style={{ background: 'rgba(243,232,188,0.05)', border: '1px solid rgba(243,232,188,0.12)' }}
-          >
-            <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: '#F3E8BC' }} />
-            <span style={{ color: 'var(--text-muted)' }}>Simulated / synthetic data. Not real intelligence.</span>
-          </div>
+
+
         </div>
 
         {/* Footer */}
@@ -222,16 +207,17 @@ export default function Dashboard() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [dash, attacks, ips] = await Promise.all([
+      const [dash, attacksResp, ips] = await Promise.all([
         getDashboard(),
-        getAttacks(),
+        getAttacks({ page_size: 8 }),
         getTopSourceIPs(6),
       ]);
       setDashboard(dash);
-      setRecent(attacks.slice(0, 8));
+      // getAttacks returns { total, page, page_size, items }
+      setRecent((attacksResp.items ?? []).slice(0, 8));
       setTopIPs(ips);
     } catch (err) {
-      console.error(err);
+      console.error('Dashboard load error:', err);
     } finally {
       setLoading(false);
     }
@@ -239,10 +225,22 @@ export default function Dashboard() {
 
   useEffect(() => { loadData(); }, []);
 
-  if (loading) return <LoadingSpinner message="Loading URL Tracer dashboard..." />;
+  if (loading) return <LoadingSpinner message="Loading dashboard..." />;
 
-  // Derived metric — no invented data
-  const attempts = (dashboard.total_attacks ?? 0) - (dashboard.potential_successes ?? 0);
+  // Dashboard may be null if the backend returned an error
+  if (!dashboard) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <Shield className="w-12 h-12" style={{ color: 'var(--text-muted)', opacity: 0.4 }} />
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+          Could not load dashboard. Is the backend running?
+        </p>
+        <button onClick={loadData} className="btn-secondary text-xs gap-1.5 px-3 py-2">
+          <RefreshCw className="w-3.5 h-3.5" /> Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -260,17 +258,8 @@ export default function Dashboard() {
           <span className="text-sm font-semibold" style={{ color: '#F3E8BC' }}>
             Security Overview
           </span>
-          <span
-            className="text-[10px] font-mono px-1.5 py-0.5 rounded"
-            style={{
-              background: 'rgba(243,232,188,0.08)',
-              border: '1px solid rgba(243,232,188,0.15)',
-              color: 'var(--text-muted)',
-            }}
-          >
-            DEMO DATA
-          </span>
         </div>
+
 
         {/* Quick actions */}
         <div className="flex flex-wrap items-center gap-2">
@@ -300,28 +289,25 @@ export default function Dashboard() {
           value={dashboard.total_requests}
           icon={Activity}
           color="teal"
-          trend={12}
-          sub="Last 7 days"
+          sub="All uploads"
         />
         <StatCard
           label="Attacks Detected"
           value={dashboard.total_attacks}
           icon={ShieldAlert}
           color="red"
-          trend={8}
           sub="All severities"
         />
         <StatCard
           label="Potential Successes"
-          value={dashboard.potential_successes}
+          value={dashboard.potential_success_count ?? 0}
           icon={Crosshair}
           color="purple"
-          trend={-5}
           sub="Possibly exploited"
         />
         <StatCard
           label="Attempts Blocked"
-          value={attempts}
+          value={(dashboard.total_attacks ?? 0) - (dashboard.potential_success_count ?? 0)}
           icon={CheckCircle2}
           color="orange"
           sub="Detected attempts"
@@ -335,6 +321,7 @@ export default function Dashboard() {
         />
       </div>
 
+
       {/* ── Row 2: Timeline (wide) + Activity Stream ─── */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
         {/* Attack timeline — takes 2/3 */}
@@ -342,54 +329,57 @@ export default function Dashboard() {
           <ChartCard
             title="Attack Activity — Last 7 Days"
             icon={Activity}
-            badge="SIMULATED"
             className="h-full"
           >
             <Timeline data={dashboard.attack_timeline} height={220} />
           </ChartCard>
         </div>
 
-        {/* Live activity stream — takes 1/3 */}
+        {/* Activity Stream — real recent detections */}
         <ChartCard
           title="Activity Stream"
           icon={Wifi}
           action={<span className="chip">LIVE</span>}
           className="h-full"
         >
-          <div className="space-y-0 -mx-1">
-            {STREAM_EVENTS.map((ev, i) => (
-              <div
-                key={i}
-                className="stream-item"
-                style={{ animationDelay: `${i * 0.07}s` }}
-              >
-                <span
-                  className="w-2 h-2 rounded-full flex-shrink-0 mt-0.5"
-                  style={{ background: SEV_DOT[ev.sev] }}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{ev.type}</p>
-                  {ev.ip !== '—' && (
-                    <p className="text-[10px] font-mono" style={{ color: 'var(--text-muted)' }}>{ev.ip}</p>
-                  )}
+          {recent.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 gap-2">
+              <Shield className="w-8 h-8" style={{ color: 'var(--text-muted)', opacity: 0.4 }} />
+              <p className="text-xs text-center" style={{ color: 'var(--text-muted)' }}>
+                No threat events yet.<br />Upload a CSV or PCAP to begin analysis.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-0 -mx-1">
+              {recent.slice(0, 6).map((ev, i) => (
+                <div
+                  key={ev.id ?? i}
+                  className="stream-item"
+                  style={{ animationDelay: `${i * 0.07}s` }}
+                >
+                  <span
+                    className="w-2 h-2 rounded-full flex-shrink-0 mt-0.5"
+                    style={{ background: SEV_DOT[ev.severity] ?? '#4ade80' }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                      {ev.attack_type}
+                    </p>
+                    {ev.source_ip && (
+                      <p className="text-[10px] font-mono" style={{ color: 'var(--text-muted)' }}>
+                        {ev.source_ip}
+                      </p>
+                    )}
+                  </div>
+                  <span className="text-[10px] font-mono flex-shrink-0" style={{ color: 'var(--text-muted)' }}>
+                    {ev.created_at ? format(new Date(ev.created_at), 'HH:mm:ss') : '—'}
+                  </span>
                 </div>
-                <span className="text-[10px] font-mono flex-shrink-0" style={{ color: 'var(--text-muted)' }}>{ev.time}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Security score mini-card */}
-          <div
-            className="mt-3 rounded-xl p-3 text-center"
-            style={{ background: 'rgba(3,83,82,0.12)', border: '1px solid rgba(3,83,82,0.22)' }}
-          >
-            <p className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: 'var(--text-muted)' }}>
-              System Security Score
-            </p>
-            <p className="text-2xl font-bold num-display" style={{ color: '#F3E8BC' }}>94%</p>
-            <p className="text-[10px] mt-0.5" style={{ color: '#4ade80' }}>● All systems operational</p>
-          </div>
+              ))}
+            </div>
+          )}
         </ChartCard>
+
       </div>
 
       {/* ── Row 3: Attack Distribution + Severity + Top IPs ── */}
@@ -400,7 +390,6 @@ export default function Dashboard() {
           <ChartCard
             title="Attack Distribution"
             icon={BarChart2}
-            badge="SIMULATED"
             className="h-full"
           >
             <AttackChart data={dashboard.attack_distribution} />
@@ -412,12 +401,12 @@ export default function Dashboard() {
           <ChartCard
             title="Severity"
             icon={Target}
-            badge="SIMULATED"
             className="h-full"
           >
             <SeverityChart data={dashboard.severity_distribution} />
           </ChartCard>
         </div>
+
 
         {/* Top Source IPs — 2/5 */}
         <div className="xl:col-span-2">
@@ -483,14 +472,24 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody>
-              {recent.map(atk => (
+              {recent.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-10" style={{ color: 'var(--text-muted)' }}>
+                    <div className="flex flex-col items-center gap-2">
+                      <Shield className="w-8 h-8" style={{ opacity: 0.3 }} />
+                      <span className="text-xs">No detections yet. Upload a CSV or PCAP file to start analysis.</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : recent.map(atk => (
+
                 <tr
                   key={atk.id}
                   onClick={() => setSelected(atk)}
                   className={selected?.id === atk.id ? 'selected' : ''}
                 >
                   <td className="font-mono text-xs whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>
-                    {format(parseISO(atk.timestamp), 'MM/dd HH:mm')}
+                    {atk.created_at ? format(new Date(atk.created_at), 'MM/dd HH:mm') : '—'}
                   </td>
                   <td className="font-mono text-xs whitespace-nowrap" style={{ color: '#F3E8BC' }}>
                     {atk.source_ip}

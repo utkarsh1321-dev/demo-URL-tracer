@@ -47,7 +47,10 @@ function ConfidenceBar({ value, attack }) {
   );
 }
 
-const DEMO_PAYLOADS = [
+// Example URLs for the interactive ML prediction tester.
+// These are preset inputs to help users test the classifier —
+// they are NOT real attack data displayed as statistics.
+const EXAMPLE_PAYLOADS = [
   { label: 'SQL Injection',       url: "/search?id=1' UNION SELECT username,password FROM users--", method: 'GET'  },
   { label: 'XSS',                 url: "/comment?text=<script>alert(document.cookie)</script>",     method: 'POST' },
   { label: 'Directory Traversal', url: "/download?file=../../etc/passwd",                            method: 'GET'  },
@@ -55,6 +58,7 @@ const DEMO_PAYLOADS = [
   { label: 'SSRF',                url: "/fetch?url=http://169.254.169.254/latest/meta-data/",        method: 'GET'  },
   { label: 'Normal Request',      url: "/api/v1/products?category=electronics&page=2",               method: 'GET'  },
 ];
+
 
 export default function MLIntelligence() {
   usePageMeta('ML Intelligence', 'URL Tracer Security — Machine-learning attack classification engine and URL predictor.');
@@ -265,7 +269,7 @@ export default function MLIntelligence() {
 
         {/* Presets */}
         <div className="flex flex-wrap gap-2 mb-4">
-          {DEMO_PAYLOADS.map(p => (
+          {EXAMPLE_PAYLOADS.map(p => (
             <button
               key={p.label}
               onClick={() => { setCustomUrl(p.url); setCustomMethod(p.method); runPredict(p.url, p.method); }}
