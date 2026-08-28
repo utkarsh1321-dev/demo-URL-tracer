@@ -101,10 +101,38 @@ export async function getTopSourceIPs(limit = 6) {
 }
 
 // ─── File Uploads ──────────────────────────────────────────────────────────────
+// ─── URL Analysis (Phase 3) ────────────────────────────────────────────────────
+
 /**
- * POST /api/upload/csv
- * Uploads a CSV file for analysis.
+ * POST /api/analyze/url
+ * Analyse a single URL for phishing/malicious content.
  */
+export async function analyzeURL(url) {
+  return request('/analyze/url', {
+    method: 'POST',
+    body: JSON.stringify({ url }),
+  });
+}
+
+/**
+ * GET /api/analyze/history
+ * Returns the authenticated user's URL analysis history.
+ */
+export async function getAnalysisHistory({ page = 1, pageSize = 20, riskLevel } = {}) {
+  const params = new URLSearchParams({ page, page_size: pageSize });
+  if (riskLevel) params.set('risk_level', riskLevel);
+  return request(`/analyze/history?${params}`);
+}
+
+/**
+ * DELETE /api/analyze/history/:id
+ * Delete a specific URL analysis record.
+ */
+export async function deleteAnalysis(id) {
+  return request(`/analyze/history/${id}`, { method: 'DELETE' });
+}
+
+// ─── File uploads ─────────────────────────────────────────────────────────────
 export async function uploadCSV(file) {
   const auth = await _authHeader();
   const form = new FormData();

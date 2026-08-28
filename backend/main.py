@@ -20,7 +20,7 @@ from fastapi.responses import JSONResponse
 from database import engine
 from models import Base
 
-from api import dashboard, attacks, ips, upload, export, ml
+from api import dashboard, attacks, ips, upload, export, ml, analyze
 
 
 # ─────────────────────────────────────────────
@@ -46,7 +46,7 @@ app = FastAPI(
         "Analyzes HTTP traffic, PCAP files, and URLs for malicious patterns "
         "using rule-based detection and ML classification."
     ),
-    version="1.1.0",
+    version="1.2.0",
     lifespan=lifespan,
 )
 
@@ -80,11 +80,12 @@ async def global_exception_handler(request: Request, exc: Exception):
 # ─────────────────────────────────────────────
 
 app.include_router(dashboard.router, prefix="/api")
-app.include_router(attacks.router, prefix="/api")
-app.include_router(ips.router, prefix="/api")
-app.include_router(upload.router, prefix="/api")
-app.include_router(export.router, prefix="/api")
-app.include_router(ml.router, prefix="/api")
+app.include_router(attacks.router,   prefix="/api")
+app.include_router(ips.router,       prefix="/api")
+app.include_router(upload.router,    prefix="/api")
+app.include_router(export.router,    prefix="/api")
+app.include_router(ml.router,        prefix="/api")
+app.include_router(analyze.router,   prefix="/api")   # Phase 3: URL analysis engine
 
 
 # ─────────────────────────────────────────────

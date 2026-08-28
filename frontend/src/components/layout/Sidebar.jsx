@@ -2,17 +2,18 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, ShieldAlert, Globe, FileSearch,
   FileBarChart2, Brain, Mail, Lock, Shield,
-  Activity, Wifi, LogOut,
+  Activity, Wifi, LogOut, Link,
 } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 
 const NAV_ITEMS = [
   { to: '/',                label: 'Dashboard',       icon: LayoutDashboard },
-  { to: '/attacks',         label: 'Attack Explorer', icon: ShieldAlert },
-  { to: '/ip-intelligence', label: 'IP Intelligence', icon: Globe },
-  { to: '/pcap',            label: 'PCAP Analysis',   icon: FileSearch },
-  { to: '/ml',              label: 'ML Intelligence', icon: Brain },
-  { to: '/reports',         label: 'Reports',         icon: FileBarChart2 },
+  { to: '/url-analysis',    label: 'URL Analysis',    icon: Link            },
+  { to: '/attacks',         label: 'Attack Explorer', icon: ShieldAlert     },
+  { to: '/ip-intelligence', label: 'IP Intelligence', icon: Globe           },
+  { to: '/pcap',            label: 'PCAP Analysis',   icon: FileSearch      },
+  { to: '/ml',              label: 'ML Intelligence', icon: Brain           },
+  { to: '/reports',         label: 'Reports',         icon: FileBarChart2   },
 ];
 
 const INFO_ITEMS = [

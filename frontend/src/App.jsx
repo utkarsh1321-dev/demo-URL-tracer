@@ -9,6 +9,7 @@ import IPIntelligence    from './pages/IPIntelligence.jsx';
 import PCAPAnalysis      from './pages/PCAPAnalysis.jsx';
 import Reports           from './pages/Reports.jsx';
 import MLIntelligence    from './pages/MLIntelligence.jsx';
+import URLAnalysis       from './pages/URLAnalysis.jsx';
 import Contact           from './pages/Contact.jsx';
 import ThankYou          from './pages/ThankYou.jsx';
 import PrivacyPolicy     from './pages/PrivacyPolicy.jsx';
@@ -39,6 +40,7 @@ export default function App() {
             <Route path="/pcap"            element={<PCAPAnalysis />} />
             <Route path="/reports"         element={<Reports />} />
             <Route path="/ml"              element={<MLIntelligence />} />
+            <Route path="/url-analysis"    element={<URLAnalysis />} />
           </Route>
 
           {/* ── 404 ───────────────────────────────────────────────────── */}
