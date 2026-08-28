@@ -4,12 +4,12 @@ import {
   Activity, ShieldAlert, Globe, CheckCircle2, RefreshCw,
   FileSearch, Brain, ArrowRight, Shield, Clock,
   AlertTriangle, ChevronRight, Target, BarChart2,
-  Crosshair, Wifi
+  Crosshair, Wifi, Link2, Search, TrendingUp, AlertCircle
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import usePageMeta from '../hooks/usePageMeta.js';
 
-import { getDashboard, getAttacks, getTopSourceIPs } from '../api/apiService.js';
+import { getDashboard, getAttacks, getTopSourceIPs, getURLStats } from '../api/apiService.js';
 import StatCard        from '../components/common/StatCard.jsx';
 import ChartCard       from '../components/common/ChartCard.jsx';
 import RiskBadge       from '../components/common/RiskBadge.jsx';
@@ -199,6 +199,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   const [dashboard, setDashboard] = useState(null);
+  const [urlStats,  setUrlStats]  = useState(null);
   const [recent,    setRecent]    = useState([]);
   const [topIPs,    setTopIPs]    = useState([]);
   const [loading,   setLoading]   = useState(true);
@@ -207,12 +208,14 @@ export default function Dashboard() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [dash, attacksResp, ips] = await Promise.all([
+      const [dash, attacksResp, ips, urlStatsResp] = await Promise.all([
         getDashboard(),
         getAttacks({ page_size: 8 }),
         getTopSourceIPs(6),
+        getURLStats().catch(() => null),  // non-fatal if not available
       ]);
       setDashboard(dash);
+      setUrlStats(urlStatsResp);
       // getAttacks returns { total, page, page_size, items }
       setRecent((attacksResp.items ?? []).slice(0, 8));
       setTopIPs(ips);
@@ -263,6 +266,7 @@ export default function Dashboard() {
 
         {/* Quick actions */}
         <div className="flex flex-wrap items-center gap-2">
+          <QuickAction to="/url-analysis"   icon={Search}      label="URL Scan"    />
           <QuickAction to="/attacks"         icon={ShieldAlert} label="Attacks"      />
           <QuickAction to="/ip-intelligence" icon={Globe}       label="IP Intel"     />
           <QuickAction to="/pcap"            icon={FileSearch}  label="PCAP"         />
@@ -322,7 +326,222 @@ export default function Dashboard() {
       </div>
 
 
-      {/* ── Row 2: Timeline (wide) + Activity Stream ─── */}
+      {/* ── Row 2: URL Analysis Overview (Phase 6 — real data) ─ */}
+      <div className="glass-card overflow-hidden">
+        {/* Header */}
+        <div
+          className="flex items-center justify-between px-5 py-4"
+          style={{ borderBottom: '1px solid rgba(3,83,82,0.12)' }}
+        >
+          <h2 className="text-sm font-semibold flex items-center gap-2" style={{ color: '#F3E8BC' }}>
+            <Link2 className="w-4 h-4" style={{ color: '#F3E8BC' }} />
+            URL Analysis Overview
+            {urlStats && (
+              <span
+                className="text-[10px] font-mono px-1.5 py-0.5 rounded"
+                style={{ background: 'rgba(3,83,82,0.18)', border: '1px solid rgba(3,83,82,0.3)', color: 'var(--text-secondary)' }}
+              >
+                {urlStats.total_analyses} URLs scanned
+              </span>
+            )}
+          </h2>
+          <button
+            onClick={() => navigate('/url-analysis')}
+            className="text-xs flex items-center gap-1 transition-colors"
+            style={{ color: 'var(--text-muted)' }}
+            onMouseEnter={e => e.currentTarget.style.color = '#F3E8BC'}
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+          >
+            Analyse URL <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* Body */}
+        {!urlStats || urlStats.total_analyses === 0 ? (
+          /* ── Empty State ─────────────────────────────────────────── */
+          <div className="flex flex-col items-center justify-center py-12 gap-3 px-6">
+            <Search className="w-10 h-10" style={{ color: 'var(--text-muted)', opacity: 0.35 }} />
+            <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+              No analyses yet.
+            </p>
+            <p className="text-xs text-center" style={{ color: 'var(--text-muted)', maxWidth: 300 }}>
+              Submit your first URL to begin. Results will appear here with risk scores,
+              predictions, and full history.
+            </p>
+            <button
+              onClick={() => navigate('/url-analysis')}
+              className="btn-primary text-xs px-4 py-2 mt-1"
+            >
+              <Search className="w-3.5 h-3.5" />
+              Analyse a URL
+              <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
+        ) : (
+          /* ── Real Data ───────────────────────────────────────────── */
+          <div className="p-5 space-y-5">
+            {/* KPI row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {/* Total Analyses */}
+              <div className="rounded-xl p-4 flex flex-col gap-1"
+                style={{ background: 'rgba(3,83,82,0.08)', border: '1px solid rgba(3,83,82,0.18)' }}>
+                <p className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Total Analyses</p>
+                <p className="text-2xl font-bold num-display" style={{ color: '#F3E8BC' }}>
+                  {urlStats.total_analyses}
+                </p>
+                <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>URLs scanned</p>
+              </div>
+
+              {/* Threats Detected */}
+              <div className="rounded-xl p-4 flex flex-col gap-1"
+                style={{ background: 'rgba(248,113,113,0.06)', border: '1px solid rgba(248,113,113,0.18)' }}>
+                <p className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Threats Detected</p>
+                <p className="text-2xl font-bold num-display" style={{ color: '#f87171' }}>
+                  {urlStats.threats_detected}
+                </p>
+                <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                  {urlStats.total_analyses > 0
+                    ? `${Math.round(urlStats.threats_detected / urlStats.total_analyses * 100)}% of scans`
+                    : 'Phishing / Malware'}
+                </p>
+              </div>
+
+              {/* High Risk URLs */}
+              <div className="rounded-xl p-4 flex flex-col gap-1"
+                style={{ background: 'rgba(251,146,60,0.06)', border: '1px solid rgba(251,146,60,0.18)' }}>
+                <p className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>High Risk URLs</p>
+                <p className="text-2xl font-bold num-display" style={{ color: '#fb923c' }}>
+                  {urlStats.high_risk_urls}
+                </p>
+                <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>HIGH + CRITICAL</p>
+              </div>
+
+              {/* Avg Risk Score */}
+              <div className="rounded-xl p-4 flex flex-col gap-1"
+                style={{ background: 'rgba(3,83,82,0.08)', border: '1px solid rgba(3,83,82,0.18)' }}>
+                <p className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Avg Risk Score</p>
+                <p className="text-2xl font-bold num-display" style={{ color: '#F3E8BC' }}>
+                  {urlStats.avg_risk_score}
+                </p>
+                <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>out of 100</p>
+              </div>
+            </div>
+
+            {/* Risk distribution bar + recent table side by side */}
+            <div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
+
+              {/* Risk Distribution — 2/5 */}
+              <div className="xl:col-span-2 rounded-xl p-4 space-y-3"
+                style={{ background: 'rgba(3,83,82,0.06)', border: '1px solid rgba(3,83,82,0.14)' }}>
+                <p className="text-xs font-semibold" style={{ color: '#F3E8BC' }}>Risk Distribution</p>
+                {[
+                  { level: 'CRITICAL', color: '#f87171' },
+                  { level: 'HIGH',     color: '#fb923c' },
+                  { level: 'MEDIUM',   color: '#fbbf24' },
+                  { level: 'LOW',      color: '#4ade80' },
+                ].map(({ level, color }) => {
+                  const count = urlStats.risk_distribution?.[level] ?? 0;
+                  const pct   = urlStats.total_analyses > 0
+                    ? Math.round(count / urlStats.total_analyses * 100) : 0;
+                  return (
+                    <div key={level} className="space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[11px] font-mono font-semibold" style={{ color }}>{level}</span>
+                        <span className="text-[11px] font-mono" style={{ color: 'var(--text-muted)' }}>
+                          {count} ({pct}%)
+                        </span>
+                      </div>
+                      <div className="h-1.5 rounded-full" style={{ background: 'rgba(3,83,82,0.15)' }}>
+                        <div
+                          className="h-full rounded-full transition-all duration-700"
+                          style={{ width: `${pct}%`, background: color }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Recent Analyses — 3/5 */}
+              <div className="xl:col-span-3 overflow-x-auto">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>URL</th>
+                      <th>Prediction</th>
+                      <th>Risk Score</th>
+                      <th>Confidence</th>
+                      <th>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(urlStats.recent_analyses ?? []).slice(0, 8).map((a, i) => (
+                      <tr key={a.id ?? i}>
+                        <td className="font-mono text-xs max-w-[180px] truncate" style={{ color: 'var(--text-secondary)' }}
+                          title={a.url}>
+                          {a.url?.replace(/^https?:\/\//, '').slice(0, 35)}{a.url?.length > 35 ? '…' : ''}
+                        </td>
+                        <td>
+                          <span
+                            className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded"
+                            style={{
+                              color: a.prediction === 'PHISHING' || a.prediction === 'MALWARE'
+                                ? '#f87171' : '#4ade80',
+                              background: a.prediction === 'PHISHING' || a.prediction === 'MALWARE'
+                                ? 'rgba(248,113,113,0.1)' : 'rgba(74,222,128,0.1)',
+                              border: `1px solid ${a.prediction === 'PHISHING' || a.prediction === 'MALWARE'
+                                ? 'rgba(248,113,113,0.25)' : 'rgba(74,222,128,0.25)'}`,
+                            }}
+                          >
+                            {a.prediction}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="flex items-center gap-2">
+                            <div className="progress-bar w-12">
+                              <div
+                                className="progress-fill"
+                                style={{
+                                  width: `${a.risk_score}%`,
+                                  background: a.risk_score >= 70 ? '#f87171'
+                                    : a.risk_score >= 40 ? '#fbbf24' : '#4ade80',
+                                }}
+                              />
+                            </div>
+                            <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
+                              {a.risk_score}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
+                          {Math.round((a.confidence ?? 0) * 100)}%
+                        </td>
+                        <td className="text-[11px] font-mono whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>
+                          {a.created_at ? format(new Date(a.created_at), 'MM/dd HH:mm') : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Footer link */}
+            <div className="flex justify-end pt-1">
+              <button
+                onClick={() => navigate('/url-analysis')}
+                className="btn-primary text-xs px-3 py-1.5"
+              >
+                <Link2 className="w-3.5 h-3.5" />
+                View Full History
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Row 3: Timeline (wide) + Activity Stream ─── */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
         {/* Attack timeline — takes 2/3 */}
         <div className="xl:col-span-2">

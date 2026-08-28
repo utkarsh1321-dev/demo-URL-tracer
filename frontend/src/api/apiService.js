@@ -126,6 +126,15 @@ export async function getAnalysisHistory({ page = 1, pageSize = 20, riskLevel } 
 }
 
 /**
+ * GET /api/analyze/stats
+ * Returns URL-analysis-specific dashboard statistics for the authenticated user.
+ * Phase 6: Used by Dashboard to show real URL analysis data.
+ */
+export async function getURLStats() {
+  return request('/analyze/stats');
+}
+
+/**
  * DELETE /api/analyze/history/:id
  * Delete a specific URL analysis record.
  */

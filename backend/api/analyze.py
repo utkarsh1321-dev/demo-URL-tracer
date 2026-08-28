@@ -391,17 +391,115 @@ def delete_analysis(
 
 
 @router.get(
+    "/analyze/stats",
+    tags=["URL Analysis"],
+    summary="URL analysis dashboard statistics for the authenticated user",
+)
+def get_analyze_stats(
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    """
+    Returns aggregated URL analysis statistics for the authenticated user.
+
+    All stats are computed from url_analyses WHERE user_id = verified_jwt_sub.
+    No cross-user data is ever returned.
+
+    Returns:
+      total_analyses   — total URLs analysed by this user
+      threats_detected — PHISHING + MALWARE predictions
+      high_risk_urls   — analyses with risk_level HIGH or CRITICAL
+      risk_distribution — count per risk_level (LOW/MEDIUM/HIGH/CRITICAL)
+      recent_analyses  — last 10 analyses (url, prediction, risk_score, etc.)
+    """
+    from sqlalchemy import case
+    from api.analyze import URLAnalysis   # import ORM model from Phase 3
+
+    uid = current_user.id
+    set_rls_user(db, uid)
+
+    base = db.query(URLAnalysis).filter(URLAnalysis.user_id == uid)
+
+    # ── Counts ───────────────────────────────────────────────────────────
+    total_analyses = base.count()
+
+    threats_detected = (
+        base.filter(URLAnalysis.prediction.in_(["PHISHING", "MALWARE"])).count()
+    )
+
+    high_risk_urls = (
+        base.filter(URLAnalysis.risk_level.in_(["HIGH", "CRITICAL"])).count()
+    )
+
+    # ── Risk distribution ─────────────────────────────────────────────────
+    dist_rows = (
+        db.query(URLAnalysis.risk_level, func.count(URLAnalysis.id).label("cnt"))
+        .filter(URLAnalysis.user_id == uid)
+        .group_by(URLAnalysis.risk_level)
+        .all()
+    )
+    risk_distribution = {row[0]: row[1] for row in dist_rows if row[0]}
+
+    # ── Prediction breakdown ──────────────────────────────────────────────
+    pred_rows = (
+        db.query(URLAnalysis.prediction, func.count(URLAnalysis.id).label("cnt"))
+        .filter(URLAnalysis.user_id == uid)
+        .group_by(URLAnalysis.prediction)
+        .all()
+    )
+    prediction_breakdown = {row[0]: row[1] for row in pred_rows if row[0]}
+
+    # ── Recent analyses ───────────────────────────────────────────────────
+    recent_records = (
+        base.order_by(URLAnalysis.created_at.desc())
+        .limit(10)
+        .all()
+    )
+    recent_analyses = [
+        {
+            "id":            r.id,
+            "url":           r.url,
+            "prediction":    r.prediction or "UNKNOWN",
+            "risk_score":    r.risk_score or 0,
+            "risk_level":    r.risk_level or "LOW",
+            "confidence":    r.confidence or 0.0,
+            "model_version": r.model_version or "urltracer-v1",
+            "created_at":    r.created_at.isoformat() if r.created_at else None,
+        }
+        for r in recent_records
+    ]
+
+    # ── Average risk score ────────────────────────────────────────────────
+    avg_risk = (
+        db.query(func.avg(URLAnalysis.risk_score))
+        .filter(URLAnalysis.user_id == uid)
+        .scalar()
+    )
+
+    return {
+        "total_analyses":     total_analyses,
+        "threats_detected":   threats_detected,
+        "high_risk_urls":     high_risk_urls,
+        "safe_urls":          total_analyses - threats_detected,
+        "avg_risk_score":     round(float(avg_risk), 1) if avg_risk else 0.0,
+        "risk_distribution":  risk_distribution,
+        "prediction_breakdown": prediction_breakdown,
+        "recent_analyses":    recent_analyses,
+    }
+
+
+@router.get(
     "/analyze/status",
     tags=["URL Analysis"],
-    summary="ML model status",
+    summary="ML model status (public)",
 )
 def get_model_status():
     """
     Return ML model availability status (public — no auth required).
     Does not expose sensitive model internals.
     """
-    from analysis.url_model import get_model_status
-    status = get_model_status()
+    from analysis.url_model import get_model_status as _get_status
+    status = _get_status()
     # Strip internal load_error detail before returning to client
     status.pop("load_error", None)
     return status
