@@ -1,6 +1,7 @@
 """
 api/dashboard.py
-GET /api/dashboard — Aggregate statistics for the frontend dashboard.
+GET /api/dashboard — Aggregate stats scoped to the authenticated user.
+Phase 2: Auth required. All queries filtered by current_user.id.
 """
 
 from sqlalchemy.orm import Session
@@ -8,7 +9,9 @@ from sqlalchemy import func
 from fastapi import APIRouter, Depends
 
 from database import get_db
-from models import Request, Detection, IPAnalysis
+from auth import CurrentUser, get_current_user
+from db_utils import set_rls_user
+from models import Request, Detection, IPAnalysis, Upload
 from schemas import (
     DashboardResponse, AttackTypeStat, SeverityStat, TopIP, DetectionOut
 )
@@ -17,33 +20,46 @@ router = APIRouter()
 
 
 @router.get("/dashboard", response_model=DashboardResponse, tags=["Dashboard"])
-def get_dashboard(db: Session = Depends(get_db)):
+def get_dashboard(
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
     """
-    Returns aggregate stats:
-    - Total requests and attacks
-    - Attacks grouped by type and severity
-    - Top attacking IPs
-    - Recent detections
-    - Potential success count (simulated)
+    Returns aggregate stats for the authenticated user's data only.
+    Cross-user data is never returned.
     """
-    total_requests = db.query(func.count(Request.id)).scalar() or 0
-    total_attacks = db.query(func.count(Detection.id)).scalar() or 0
+    uid = current_user.id
+    set_rls_user(db, uid)
 
-    # IPs with risk level HIGH or CRITICAL
-    high_risk_ips = (
-        db.query(func.count(IPAnalysis.id))
-        .filter(IPAnalysis.risk_level.in_(["HIGH", "CRITICAL"]))
+    total_requests = (
+        db.query(func.count(Request.id))
+        .join(Upload, Request.upload_id == Upload.id)
+        .filter(Upload.user_id == uid)
         .scalar() or 0
     )
+
+    total_attacks = (
+        db.query(func.count(Detection.id))
+        .filter(Detection.user_id == uid)
+        .scalar() or 0
+    )
+
+    high_risk_ips = (
+        db.query(func.count(IPAnalysis.id))
+        .filter(IPAnalysis.user_id == uid, IPAnalysis.risk_level.in_(["HIGH", "CRITICAL"]))
+        .scalar() or 0
+    )
+
     critical_ips = (
         db.query(func.count(IPAnalysis.id))
-        .filter(IPAnalysis.risk_level == "CRITICAL")
+        .filter(IPAnalysis.user_id == uid, IPAnalysis.risk_level == "CRITICAL")
         .scalar() or 0
     )
 
     # Attacks by type
     type_rows = (
         db.query(Detection.attack_type, func.count(Detection.id).label("cnt"))
+        .filter(Detection.user_id == uid)
         .group_by(Detection.attack_type)
         .order_by(func.count(Detection.id).desc())
         .all()
@@ -53,16 +69,17 @@ def get_dashboard(db: Session = Depends(get_db)):
     # Attacks by severity
     sev_rows = (
         db.query(Detection.severity, func.count(Detection.id).label("cnt"))
+        .filter(Detection.user_id == uid)
         .group_by(Detection.severity)
         .order_by(func.count(Detection.id).desc())
         .all()
     )
     attacks_by_severity = [SeverityStat(severity=r[0], count=r[1]) for r in sev_rows]
 
-    # Top 10 attacking IPs
+    # Top 10 attacking IPs for this user
     top_ips = (
         db.query(IPAnalysis)
-        .filter(IPAnalysis.attack_count > 0)
+        .filter(IPAnalysis.user_id == uid, IPAnalysis.attack_count > 0)
         .order_by(IPAnalysis.risk_score.desc())
         .limit(10)
         .all()
@@ -77,19 +94,19 @@ def get_dashboard(db: Session = Depends(get_db)):
         for ip in top_ips
     ]
 
-    # 20 most recent detections
+    # 20 most recent detections for this user
     recent = (
         db.query(Detection)
+        .filter(Detection.user_id == uid)
         .order_by(Detection.created_at.desc())
         .limit(20)
         .all()
     )
     recent_detections = [DetectionOut.model_validate(d) for d in recent]
 
-    # Simulated success count
     potential_success_count = (
         db.query(func.count(Detection.id))
-        .filter(Detection.result == "POTENTIAL_SUCCESS")
+        .filter(Detection.user_id == uid, Detection.result == "POTENTIAL_SUCCESS")
         .scalar() or 0
     )
 

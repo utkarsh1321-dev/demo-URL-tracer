@@ -1,9 +1,10 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, ShieldAlert, Globe, FileSearch,
   FileBarChart2, Brain, Mail, Lock, Shield,
-  Activity, Wifi,
+  Activity, Wifi, LogOut,
 } from 'lucide-react';
+import { useAuth } from '../../auth/AuthContext';
 
 const NAV_ITEMS = [
   { to: '/',                label: 'Dashboard',       icon: LayoutDashboard },
@@ -20,6 +21,15 @@ const INFO_ITEMS = [
 ];
 
 export default function Sidebar() {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const userEmail = user?.email ?? '';
+
+  async function handleSignOut() {
+    try { await signOut(); } catch (_) {}
+    navigate('/login', { replace: true });
+  }
+
   return (
     <aside className="flex flex-col w-64 min-h-screen flex-shrink-0 glass-strong relative z-10">
 
@@ -108,14 +118,30 @@ export default function Sidebar() {
           </p>
         </div>
 
-        {/* Connection indicator */}
-        <div className="flex items-center gap-2">
-          <Wifi className="w-3.5 h-3.5" style={{ color: 'var(--teal-primary)' }} />
-          <span className="text-[10px] font-mono" style={{ color: 'var(--text-muted)' }}>DEMO-ENV ACTIVE</span>
-          <span
-            className="w-1.5 h-1.5 rounded-full ml-auto animate-pulse-slow"
-            style={{ background: '#4ade80' }}
-          />
+        {/* User info + sign out */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <Wifi className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--teal-primary)' }} />
+            <span className="text-[10px] font-mono truncate" style={{ color: 'var(--text-muted)' }}>
+              {userEmail || 'Connected'}
+            </span>
+            <span
+              className="w-1.5 h-1.5 rounded-full flex-shrink-0 ml-auto animate-pulse-slow"
+              style={{ background: '#4ade80' }}
+            />
+          </div>
+          <button
+            onClick={handleSignOut}
+            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-all hover:opacity-80"
+            style={{
+              background: 'rgba(248,113,113,0.06)',
+              border: '1px solid rgba(248,113,113,0.15)',
+              color: '#f87171',
+            }}
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            Sign out
+          </button>
         </div>
       </div>
     </aside>

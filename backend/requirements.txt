@@ -11,4 +11,7 @@ python-Levenshtein==0.25.1
 scikit-learn>=1.4.0
 numpy>=1.26.0
 
-# Install with: pip install -r requirements.txt --only-binary pandas,numpy
+# Phase 2: Production database + auth
+python-dotenv==1.0.1
+python-jose[cryptography]==3.3.0
+psycopg2-binary==2.9.9

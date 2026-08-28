@@ -1,29 +1,40 @@
 // ──────────────────────────────────────────────────────────────────────────────
 // Central API Service
-// All calls go to the real FastAPI backend.
+// All calls go to the real FastAPI backend with JWT auth header.
 //
-// Phase 1: Mock data removed. USE_MOCK flag eliminated.
-// Phase 2: Auth headers (JWT) will be added here.
+// Phase 2: Authorization: Bearer {jwt} injected on every protected call.
+// Phase 3: URL analysis endpoint will be added here.
 // ──────────────────────────────────────────────────────────────────────────────
+
+import { supabase } from '../lib/supabase';
 
 // Backend base URL — set VITE_API_URL in .env.local for local dev
 const _BASE = import.meta.env.VITE_API_URL
   ? `${import.meta.env.VITE_API_URL}/api`
   : '/api';   // Vite proxy fallback (vite.config.js → target: localhost:8000)
 
+// ─── Auth header ───────────────────────────────────────────────────────────────
+async function _authHeader() {
+  const { data } = await supabase.auth.getSession();
+  const token = data?.session?.access_token;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 // ─── Core HTTP helper ──────────────────────────────────────────────────────────
 async function request(path, options = {}) {
+  const auth = await _authHeader();
   const res = await fetch(`${_BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
+    headers: { 'Content-Type': 'application/json', ...auth, ...options.headers },
     ...options,
   });
   if (!res.ok) {
-    // Never expose internal error details from the server to the UI
-    const msg = res.status === 404
-      ? 'Resource not found.'
-      : res.status >= 500
-        ? 'Server error. Please try again later.'
-        : `Request failed (${res.status}).`;
+    const msg = res.status === 401
+      ? 'Session expired. Please log in again.'
+      : res.status === 404
+        ? 'Resource not found.'
+        : res.status >= 500
+          ? 'Server error. Please try again later.'
+          : `Request failed (${res.status}).`;
     throw new Error(msg);
   }
   return res.json();
@@ -95,9 +106,11 @@ export async function getTopSourceIPs(limit = 6) {
  * Uploads a CSV file for analysis.
  */
 export async function uploadCSV(file) {
+  const auth = await _authHeader();
   const form = new FormData();
   form.append('file', file);
-  return request('/upload/csv', { method: 'POST', headers: {}, body: form });
+  // No Content-Type header — browser sets multipart/form-data with boundary
+  return request('/upload/csv', { method: 'POST', headers: { ...auth }, body: form });
 }
 
 /**
@@ -105,9 +118,10 @@ export async function uploadCSV(file) {
  * Uploads a PCAP file for analysis.
  */
 export async function uploadPCAP(file) {
+  const auth = await _authHeader();
   const form = new FormData();
   form.append('file', file);
-  return request('/upload/pcap', { method: 'POST', headers: {}, body: form });
+  return request('/upload/pcap', { method: 'POST', headers: { ...auth }, body: form });
 }
 
 // ─── Exports ───────────────────────────────────────────────────────────────────

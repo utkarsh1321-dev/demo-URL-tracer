@@ -1,7 +1,8 @@
 """
 api/attacks.py
-GET /api/attacks        — Paginated, filtered list of detections.
-GET /api/attacks/{id}   — Single detection detail with linked request.
+GET /api/attacks        — Paginated, filtered detections for the authenticated user.
+GET /api/attacks/{id}   — Single detection (ownership verified).
+Phase 2: Auth required. Cross-user access denied.
 """
 
 from typing import Optional
@@ -10,7 +11,9 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Detection, Request
+from auth import CurrentUser, get_current_user
+from db_utils import set_rls_user
+from models import Detection
 from schemas import AttackListResponse, DetectionOut
 
 router = APIRouter()
@@ -18,19 +21,19 @@ router = APIRouter()
 
 @router.get("/attacks", response_model=AttackListResponse, tags=["Attacks"])
 def list_attacks(
-    attack_type: Optional[str] = Query(None, description="Filter by attack type"),
-    severity: Optional[str] = Query(None, description="Filter by severity: LOW|MEDIUM|HIGH|CRITICAL"),
-    result: Optional[str] = Query(None, description="Filter by result: ATTEMPT|POTENTIAL_SUCCESS"),
-    source_ip: Optional[str] = Query(None, description="Filter by source IP"),
-    page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(50, ge=1, le=500, description="Items per page"),
+    attack_type: Optional[str] = Query(None),
+    severity:    Optional[str] = Query(None),
+    result:      Optional[str] = Query(None),
+    source_ip:   Optional[str] = Query(None),
+    page:        int = Query(1, ge=1),
+    page_size:   int = Query(50, ge=1, le=500),
     db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
-    """
-    Returns a paginated list of all detections with optional filters.
-    Ordered by created_at descending (most recent first).
-    """
-    q = db.query(Detection)
+    uid = current_user.id
+    set_rls_user(db, uid)
+
+    q = db.query(Detection).filter(Detection.user_id == uid)
 
     if attack_type:
         q = q.filter(Detection.attack_type.ilike(f"%{attack_type}%"))
@@ -58,11 +61,20 @@ def list_attacks(
 
 
 @router.get("/attacks/{attack_id}", response_model=DetectionOut, tags=["Attacks"])
-def get_attack(attack_id: int, db: Session = Depends(get_db)):
-    """
-    Returns full detail for a single detection by ID.
-    """
-    det = db.query(Detection).filter(Detection.id == attack_id).first()
+def get_attack(
+    attack_id: int,
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    uid = current_user.id
+    set_rls_user(db, uid)
+
+    det = (
+        db.query(Detection)
+        .filter(Detection.id == attack_id, Detection.user_id == uid)
+        .first()
+    )
     if not det:
-        raise HTTPException(status_code=404, detail=f"Detection {attack_id} not found.")
+        # Return 404 for both "not found" and "not owned" — never leak existence
+        raise HTTPException(status_code=404, detail="Detection not found.")
     return DetectionOut.model_validate(det)
