@@ -1,17 +1,17 @@
 """
-main.py -- FastAPI application entry point.
+main.py — FastAPI application entry point.
+URL Tracer — URL-Based Phishing & Cyber Attack Detection Platform
 
-URL Tracer -- URL-Based Phishing & Cyber Attack Detection Platform
-
-Run with:
+Run locally:
     uvicorn main:app --reload --host 0.0.0.0 --port 8000
 """
 
-# Load .env FIRST -- before any module that reads os.environ at import time
+# ─── Load .env FIRST — before any module reads os.environ ────────────────────
 from dotenv import load_dotenv
 load_dotenv()
 
 import logging
+import os
 import time
 from contextlib import asynccontextmanager
 
@@ -25,11 +25,19 @@ from models import Base
 from api import dashboard, attacks, ips, upload, export, ml, analyze, pcap, public_analyze
 
 # ─────────────────────────────────────────────
+# Environment & Version
+# ─────────────────────────────────────────────
+
+APP_ENV  = os.getenv("APP_ENV", "development")
+_IS_PROD = APP_ENV == "production"
+_VERSION = "1.5.0"
+
+# ─────────────────────────────────────────────
 # Logging — structured, no secrets
 # ─────────────────────────────────────────────
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, os.getenv("LOG_LEVEL", "INFO").upper(), logging.INFO),
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     datefmt="%Y-%m-%dT%H:%M:%S",
 )
@@ -41,45 +49,43 @@ logger = logging.getLogger("urltracer")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create all local SQLite tables on startup (no-op for Postgres managed by migrations)
     Base.metadata.create_all(bind=engine)
-    logger.info("URL Tracer v1.3.0 started")
+    logger.info("URL Tracer v%s started  env=%s", _VERSION, APP_ENV)
     yield
     logger.info("URL Tracer shutting down")
 
 
 # ─────────────────────────────────────────────
 # FastAPI App
+# Swagger/ReDoc disabled in production to prevent
+# information disclosure about internal API structure.
 # ─────────────────────────────────────────────
 
 app = FastAPI(
-    title="URL Tracer -- Cyber Attack Detection Platform",
+    title="URL Tracer — Cyber Attack Detection Platform",
     description=(
         "URL-based phishing and cyber attack detection. "
         "Analyzes HTTP traffic, PCAP files, and URLs for malicious patterns "
         "using rule-based detection and ML classification."
     ),
-    version="1.3.0",
+    version=_VERSION,
     lifespan=lifespan,
-    # Disable Swagger/ReDoc in production — controlled by EXPOSE_DOCS env var
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url=None  if _IS_PROD else "/docs",
+    redoc_url=None if _IS_PROD else "/redoc",
 )
 
-import os as _os
 
 # ─────────────────────────────────────────────
-# CORS — Phase 9: restricted to explicit origins
-# ─────────────────────────────────────────────
-# Set ALLOWED_ORIGINS in .env (comma-separated, no trailing slashes):
-#   Development : http://localhost:5173,http://localhost:3000
+# CORS — env-var controlled (Phase 9)
+# Set ALLOWED_ORIGINS in Render/Vercel env (comma-separated):
 #   Production  : https://url-tracer.vercel.app
+#   Development : http://localhost:5173,http://localhost:3000
 #
-# The public endpoint (/api/public/analyze) is consumed by the Chrome extension.
-# Chrome extensions with host_permissions bypass CORS entirely — the origin list
-# here applies only to browser-based (web frontend) requests.
+# Chrome extensions with host_permissions bypass CORS entirely —
+# this restriction applies only to browser (web frontend) requests.
+# ─────────────────────────────────────────────
 
-_raw_origins = _os.getenv(
+_raw_origins = os.getenv(
     "ALLOWED_ORIGINS",
     "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173",
 )
@@ -95,22 +101,38 @@ app.add_middleware(
 
 
 # ─────────────────────────────────────────────
-# Request logging middleware (Phase 5)
-# Logs: method, path, status, latency -- NEVER URL query params or body
+# Security headers middleware (Phase 10)
+# Added to every response — prevents clickjacking,
+# MIME sniffing, and protocol downgrade attacks.
+# ─────────────────────────────────────────────
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"]  = "nosniff"
+    response.headers["X-Frame-Options"]         = "DENY"
+    response.headers["X-XSS-Protection"]        = "1; mode=block"
+    response.headers["Referrer-Policy"]         = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"]      = "geolocation=(), microphone=(), camera=()"
+    if _IS_PROD:
+        # HSTS only on HTTPS (Render always uses HTTPS in production)
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=63072000; includeSubDomains; preload"
+        )
+    return response
+
+
+# ─────────────────────────────────────────────
+# Request logging — method + path + status + latency
+# NEVER logs: Authorization headers, request body,
+#             query strings, or user-submitted content
 # ─────────────────────────────────────────────
 
 @app.middleware("http")
 async def request_logger(request: Request, call_next):
-    """
-    Structured request logger.
-
-    What is logged    : method, path (no query string), status, latency_ms
-    What is NOT logged: Authorization header, request body, URL query params,
-                        any user-submitted content
-    """
-    t0 = time.perf_counter()
+    t0     = time.perf_counter()
     method = request.method
-    path   = request.url.path      # path only — no query string (which may contain tokens)
+    path   = request.url.path   # path only — no query string (may contain tokens)
 
     response = await call_next(request)
 
@@ -120,7 +142,7 @@ async def request_logger(request: Request, call_next):
 
 
 # ─────────────────────────────────────────────
-# Global exception handler -- never expose stack traces
+# Global exception handler — never expose stack traces
 # ─────────────────────────────────────────────
 
 @app.exception_handler(Exception)
@@ -129,7 +151,7 @@ async def global_exception_handler(request: Request, exc: Exception):
         "Unhandled exception on %s %s: %s",
         request.method,
         request.url.path,
-        type(exc).__name__,    # log exception type but NOT message (may contain secrets)
+        type(exc).__name__,   # log type only — exc message may contain secrets
     )
     return JSONResponse(
         status_code=500,
@@ -138,35 +160,36 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 # ─────────────────────────────────────────────
-# Register API routers
+# API routers
 # ─────────────────────────────────────────────
 
-app.include_router(dashboard.router, prefix="/api")
-app.include_router(attacks.router,   prefix="/api")
-app.include_router(ips.router,       prefix="/api")
-app.include_router(upload.router,    prefix="/api")
-app.include_router(export.router,    prefix="/api")
-app.include_router(ml.router,        prefix="/api")
-app.include_router(analyze.router,        prefix="/api")   # Phase 3-5: URL analysis engine
-app.include_router(pcap.router,           prefix="/api")   # Phase 7: PCAP history
-app.include_router(public_analyze.router, prefix="/api")   # Phase 8: Chrome extension public endpoint
+app.include_router(dashboard.router,        prefix="/api")
+app.include_router(attacks.router,          prefix="/api")
+app.include_router(ips.router,              prefix="/api")
+app.include_router(upload.router,           prefix="/api")
+app.include_router(export.router,           prefix="/api")
+app.include_router(ml.router,               prefix="/api")
+app.include_router(analyze.router,          prefix="/api")   # Phase 3-5: URL analysis + history
+app.include_router(pcap.router,             prefix="/api")   # Phase 7: PCAP history
+app.include_router(public_analyze.router,   prefix="/api")   # Phase 8: Chrome extension endpoint
 
 
 # ─────────────────────────────────────────────
-# Root health check
+# Health endpoints
 # ─────────────────────────────────────────────
 
 @app.get("/", tags=["Health"])
 def root():
     return {
         "status":  "online",
-        "system":  "URL Tracer -- Cyber Attack Detection Platform",
-        "version": "1.4.0",
-        "docs":    "/docs",
-        "redoc":   "/redoc",
+        "system":  "URL Tracer — Cyber Attack Detection Platform",
+        "version": _VERSION,
+        "env":     APP_ENV,
+        # Docs URLs intentionally omitted in production
+        **({"docs": "/docs", "redoc": "/redoc"} if not _IS_PROD else {}),
     }
 
 
 @app.get("/api/health", tags=["Health"])
 def health_check():
-    return {"status": "healthy", "version": "1.4.0"}
+    return {"status": "healthy", "version": _VERSION, "env": APP_ENV}

@@ -1,0 +1,68 @@
+# render.yaml — URL Tracer Production Deployment Configuration
+# Render (https://render.com) auto-reads this file from the repo root.
+#
+# To deploy:
+#   1. Connect this repository to Render
+#   2. In Render Dashboard → Environment, add ALL "sync: false" vars manually
+#   3. Render will build and deploy automatically on git push to main
+#
+# SECURITY NOTES:
+#   - Values marked "sync: false" MUST be set in the Render Dashboard manually.
+#   - Never put DATABASE_URL, SUPABASE_JWT_SECRET, or SUPABASE_SERVICE_ROLE_KEY
+#     in this file — they are production secrets.
+#   - SUPABASE_URL and SUPABASE_ANON_KEY are public by design (subject to RLS).
+
+services:
+  - type: web
+    name: url-tracer-backend
+    runtime: python
+    region: singapore          # Closest Render region to Supabase ap-south-1 (Mumbai)
+    plan: free                 # Upgrade to starter for persistent disk (ML model)
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1
+    healthCheckPath: /api/health
+    autoDeploy: true
+
+    envVars:
+      # ── Application ──────────────────────────────────────────────────
+      - key: APP_ENV
+        value: production
+
+      # ── CORS — allow only the Vercel frontend ────────────────────────
+      - key: ALLOWED_ORIGINS
+        value: https://url-tracer.vercel.app
+
+      # ── Supabase (public — safe to commit) ───────────────────────────
+      - key: SUPABASE_URL
+        value: https://ellixsfnmklvqirrcvvq.supabase.co
+
+      # ── Supabase anon key (public — enforced by RLS) ─────────────────
+      # Find in: Supabase Dashboard → Project Settings → API → anon/public
+      - key: SUPABASE_ANON_KEY
+        sync: false            # Set in Render Dashboard
+
+      # ── SECRETS — must be set in Render Dashboard manually ───────────
+      # Supabase Dashboard → Project Settings → API → JWT Secret
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+
+      # Supabase Dashboard → Project Settings → API → service_role key
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+
+      # Supabase Dashboard → Project Settings → Database → Connection string
+      - key: DATABASE_URL
+        sync: false
+
+      # ── ML Model ─────────────────────────────────────────────────────
+      # Path relative to backend/ where the .pkl model file is stored.
+      # On Render free plan: model is included in the build via git-tracked
+      # model_info.json + pre-built artifact uploaded at deploy time.
+      # On paid plan: use a persistent disk mounted at /data/models/
+      - key: MODEL_PATH
+        value: ./ML/ml_data/models/rf_model.pkl
+
+      # ── Logging ──────────────────────────────────────────────────────
+      - key: LOG_LEVEL
+        value: INFO
