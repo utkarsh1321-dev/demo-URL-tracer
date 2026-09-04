@@ -61,6 +61,10 @@ services:
       - key: DB_PASSWORD
         sync: false            # Set ONLY the raw password in Render Dashboard
 
+      # ── Supabase (public — safe to commit) ───────────────────────────────────
+      - key: SUPABASE_URL
+        value: https://xzkseyfhcadeehwzglah.supabase.co
+
       # ── Supabase DB connection components (static — safe to commit) ───────
       - key: DB_HOST
         value: aws-0-ap-northeast-2.pooler.supabase.com
@@ -72,7 +76,7 @@ services:
         value: postgres
 
       - key: DB_USER
-        value: postgres.ellixsfnmklvqirrcvvq
+        value: postgres.xzkseyfhcadeehwzglah
 
       # ── ML Model ─────────────────────────────────────────────────────
       # Path relative to backend/ where the .pkl model file is stored.
