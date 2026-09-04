@@ -24,8 +24,8 @@
 
 // ─── CONFIGURE THIS ───────────────────────────────────────────────────────────
 // Development: 'http://localhost:8000/api'
-// Production : update below to your deployed backend URL
-const API_BASE = 'https://url-tracer-backend.onrender.com/api';
+// ─── CONFIGURE THIS ───────────────────────────────────────────────────────────
+const API_BASE = 'https://url-tracer-lsf2.onrender.com/api';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const ANALYZE_URL = `${API_BASE}/public/analyze`;
