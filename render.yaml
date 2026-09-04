@@ -16,6 +16,7 @@ services:
   - type: web
     name: url-tracer-backend
     runtime: python
+    pythonVersion: "3.11.9"       # Pin to 3.11 — stable, all wheels pre-built.
     region: singapore          # Closest Render region to Supabase ap-south-1 (Mumbai)
     plan: free                 # Upgrade to starter for persistent disk (ML model)
     rootDir: backend
@@ -25,6 +26,10 @@ services:
     autoDeploy: true
 
     envVars:
+      # ── Python version — prevents maturin/Rust build failures on Python 3.14 ──
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+
       # ── Application ──────────────────────────────────────────────────
       - key: APP_ENV
         value: production
