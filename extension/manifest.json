@@ -8,6 +8,13 @@
   "permissions": ["activeTab", "tabs"],
   "host_permissions": ["<all_urls>"],
 
+  "web_accessible_resources": [
+    {
+      "resources": ["warning/warning.html", "warning/warning.css", "warning/warning.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+
   "action": {
     "default_popup": "popup/popup.html",
     "default_title": "Check this site — URL Tracer",
