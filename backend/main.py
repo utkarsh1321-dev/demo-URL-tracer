@@ -66,16 +66,31 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+import os as _os
+
 # ─────────────────────────────────────────────
-# CORS -- locked in Phase 9 to production origins
+# CORS — Phase 9: restricted to explicit origins
 # ─────────────────────────────────────────────
+# Set ALLOWED_ORIGINS in .env (comma-separated, no trailing slashes):
+#   Development : http://localhost:5173,http://localhost:3000
+#   Production  : https://url-tracer.vercel.app
+#
+# The public endpoint (/api/public/analyze) is consumed by the Chrome extension.
+# Chrome extensions with host_permissions bypass CORS entirely — the origin list
+# here applies only to browser-based (web frontend) requests.
+
+_raw_origins = _os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173",
+)
+ALLOWED_ORIGINS: list[str] = [o.strip() for o in _raw_origins.split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],      # TODO Phase 9: restrict to production frontend URL
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Extension-Id"],
 )
 
 

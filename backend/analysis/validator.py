@@ -50,6 +50,14 @@ def validate_and_normalize(raw_url: str) -> str:
             f"URL exceeds maximum length of {MAX_URL_LENGTH} characters."
         )
 
+    # 3. Reject null bytes and ASCII control characters
+    #    Null bytes (\x00) can bypass downstream parsers.
+    #    Control chars (\x01-\x08, \x0b-\x1f, \x7f) indicate injection attempts.
+    #    Legitimate URLs never contain these.
+    _CONTROL_RE = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]')
+    if _CONTROL_RE.search(url):
+        raise URLValidationError("URL contains invalid control characters.")
+
     # 3. Detect dangerous scheme patterns (case-insensitive, before adding scheme)
     scheme_match = re.match(r'^([a-z][a-z0-9+\-.]*)\s*:', url, re.IGNORECASE)
     if scheme_match:
