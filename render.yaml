@@ -56,9 +56,23 @@ services:
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
 
-      # Supabase Dashboard → Project Settings → Database → Connection string
-      - key: DATABASE_URL
-        sync: false
+      # Supabase Dashboard → Project Settings → Database → Connection string (URI)
+      # Database password only — no need to build a URL yourself
+      - key: DB_PASSWORD
+        sync: false            # Set ONLY the raw password in Render Dashboard
+
+      # ── Supabase DB connection components (static — safe to commit) ───────
+      - key: DB_HOST
+        value: aws-0-ap-northeast-2.pooler.supabase.com
+
+      - key: DB_PORT
+        value: "6543"
+
+      - key: DB_NAME
+        value: postgres
+
+      - key: DB_USER
+        value: postgres.ellixsfnmklvqirrcvvq
 
       # ── ML Model ─────────────────────────────────────────────────────
       # Path relative to backend/ where the .pkl model file is stored.
