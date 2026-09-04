@@ -36,7 +36,7 @@ services:
 
       # ── CORS — allow only the Vercel frontend ────────────────────────
       - key: ALLOWED_ORIGINS
-        value: https://url-tracer.vercel.app
+        value: https://demo-url-tracer.vercel.app
 
       # ── Supabase (public — safe to commit) ───────────────────────────
       - key: SUPABASE_URL
