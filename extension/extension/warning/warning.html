@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dangerous Site Blocked — URL Tracer</title>
+  <link rel="stylesheet" href="warning.css" />
+</head>
+<body>
+  <div class="container">
+
+    <div class="shield-icon">🛡️</div>
+
+    <h1 class="title">Dangerous Site Blocked</h1>
+    <p class="subtitle">URL Tracer detected a high-risk URL and stopped you from visiting it.</p>
+
+    <div class="url-box">
+      <span class="url-label">Blocked URL</span>
+      <span class="url-text" id="url-text">Loading…</span>
+    </div>
+
+    <div class="risk-banner" id="risk-banner">
+      <div class="risk-level" id="risk-level">HIGH</div>
+      <div class="risk-score">Risk Score: <strong id="risk-score">—</strong> / 100</div>
+    </div>
+
+    <p class="warning-text">
+      This page may be attempting to steal your passwords, financial information,
+      or personal data. We strongly recommend you do not proceed.
+    </p>
+
+    <div class="actions">
+      <button class="btn btn-safe" id="btn-back">← Go Back to Safety</button>
+      <button class="btn btn-danger" id="btn-proceed">Proceed Anyway (Not Recommended)</button>
+    </div>
+
+    <p class="footer">Protected by <strong>URL Tracer</strong> · Phishing &amp; Cyber Attack Detection</p>
+
+  </div>
+  <script src="warning.js"></script>
+</body>
+</html>

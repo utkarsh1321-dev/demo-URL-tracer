@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>URL Tracer</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+
+  <!-- ── Header ──────────────────────────────────────── -->
+  <div class="header">
+    <img src="../icons/icon48.png" alt="URL Tracer" class="logo" />
+    <div>
+      <p class="brand">URL Tracer</p>
+      <p class="brand-sub">Phishing Shield</p>
+    </div>
+  </div>
+
+  <!-- ── URL Bar ─────────────────────────────────────── -->
+  <div class="url-bar" id="url-bar">
+    <span class="url-label">Checking</span>
+    <span class="url-text" id="url-text">Loading...</span>
+  </div>
+
+  <!-- ── States (only one visible at a time) ─────────── -->
+
+  <!-- Loading -->
+  <div id="state-loading" class="state">
+    <div class="spinner"></div>
+    <p class="state-msg">Analysing URL...</p>
+    <p class="state-sub">Running ML threat detection</p>
+  </div>
+
+  <!-- Safe -->
+  <div id="state-safe" class="state hidden">
+    <div class="result-icon safe">&#10003;</div>
+    <p class="state-msg safe-text">Website appears safe</p>
+    <div class="meta-row">
+      <span class="badge safe">LOW</span>
+      <span class="meta-item" id="score-safe"></span>
+      <span class="meta-item" id="conf-safe"></span>
+    </div>
+  </div>
+
+  <!-- Suspicious (MEDIUM / HIGH) -->
+  <div id="state-suspicious" class="state hidden">
+    <div class="result-icon warn">&#9888;</div>
+    <p class="state-msg warn-text">Potentially suspicious</p>
+    <div class="meta-row">
+      <span class="badge warn" id="badge-suspicious">HIGH</span>
+      <span class="meta-item" id="score-suspicious"></span>
+      <span class="meta-item" id="conf-suspicious"></span>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-back" id="btn-back">&#8592; Go Back</button>
+      <button class="btn btn-proceed" id="btn-proceed">Proceed Anyway</button>
+    </div>
+  </div>
+
+  <!-- Critical -->
+  <div id="state-critical" class="state hidden">
+    <div class="result-icon danger">&#128680;</div>
+    <p class="state-msg danger-text">Dangerous Website</p>
+    <p class="state-detail">Strong phishing indicators detected.</p>
+    <div class="meta-row">
+      <span class="badge danger">CRITICAL</span>
+      <span class="meta-item" id="score-critical"></span>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-leave" id="btn-leave">Leave Website</button>
+    </div>
+  </div>
+
+  <!-- Unsupported page (chrome://, about:, etc.) -->
+  <div id="state-unsupported" class="state hidden">
+    <div class="result-icon muted">&#8212;</div>
+    <p class="state-msg muted-text">Cannot check this page</p>
+    <p class="state-detail">Only http:// and https:// URLs can be analysed.</p>
+  </div>
+
+  <!-- Error / API unavailable -->
+  <div id="state-error" class="state hidden">
+    <div class="result-icon warn">&#9888;</div>
+    <p class="state-msg warn-text">Unable to verify this URL</p>
+    <p class="state-detail danger-text" id="error-detail">
+      Do not assume the website is safe.
+    </p>
+  </div>
+
+  <!-- Rate limited -->
+  <div id="state-ratelimit" class="state hidden">
+    <div class="result-icon warn">&#8987;</div>
+    <p class="state-msg warn-text">Too many requests</p>
+    <p class="state-detail">Please wait a moment before checking another URL.</p>
+  </div>
+
+  <!-- ── Footer ──────────────────────────────────────── -->
+  <div class="footer">
+    <span id="model-version" class="footer-ver"></span>
+    <a href="https://url-tracer.vercel.app" target="_blank" class="footer-link">
+      Open URL Tracer &#8599;
+    </a>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
