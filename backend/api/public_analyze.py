@@ -79,11 +79,12 @@ async def public_analyze(
     """
     # ── 1. IP-based rate limiting ────────────────────────────────────────
     client_ip = request.client.host if request.client else "unknown"
-    if not _public_limiter.is_allowed(client_ip):
+    _allowed, _retry_after = _public_limiter.check(client_ip)
+    if not _allowed:
         raise HTTPException(
             status_code=429,
             detail="Too many requests. Please wait before analysing another URL.",
-            headers={"Retry-After": "60"},
+            headers={"Retry-After": str(_retry_after)},
         )
 
     # ── 2. Validate and normalize URL ────────────────────────────────────
