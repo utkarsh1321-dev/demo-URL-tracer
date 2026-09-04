@@ -8,7 +8,8 @@ import {
 
 import { uploadPCAP, getPCAPHistory, deletePCAPAnalysis } from '../api/apiService.js';
 import usePageMeta from '../hooks/usePageMeta.js';
-import RiskBadge  from '../components/common/RiskBadge.jsx';\nimport FileUpload from '../components/common/FileUpload.jsx';
+import RiskBadge  from '../components/common/RiskBadge.jsx';
+import FileUpload from '../components/common/FileUpload.jsx';
 
 // ── Processing stages ───────────────────────────────────────
 const STAGES = [
