@@ -23,10 +23,17 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 # ── Model path ────────────────────────────────────────────────────────────────
-# Relative to project root; works whether backend is run from root or backend/
-_PROJECT_ROOT = Path(__file__).parent.parent.parent
-_MODEL_PKL    = _PROJECT_ROOT / "ML" / "models" / "url_phishing_model.pkl"
-_MODEL_INFO   = _PROJECT_ROOT / "ML" / "models" / "model_info.json"
+# build_model.py saves to backend/models/ (relative to backend/ working dir).
+# At runtime, uvicorn also runs from backend/, so the relative path works.
+# MODEL_PATH env var overrides for custom deployments.
+
+_BACKEND_DIR = Path(__file__).parent.parent          # backend/
+_DEFAULT_PKL  = _BACKEND_DIR / "models" / "url_phishing_model.pkl"
+_DEFAULT_INFO = _BACKEND_DIR / "models" / "model_info.json"
+
+_env_path    = os.environ.get("MODEL_PATH", "")
+_MODEL_PKL   = Path(_env_path) if _env_path else _DEFAULT_PKL
+_MODEL_INFO  = _MODEL_PKL.parent / "model_info.json"
 
 # ── Label index → prediction string ──────────────────────────────────────────
 _LABEL_MAP = {0: "BENIGN", 1: "PHISHING", 2: "MALWARE"}

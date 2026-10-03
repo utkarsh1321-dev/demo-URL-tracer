@@ -123,3 +123,7 @@ ML/**/*.pyc
 # ML/models/model_info.json   <- model metadata (small JSON, tracked)
 # ML/models/.gitkeep          <- directory marker
 # ML/data/raw/.gitkeep        <- directory marker
+
+# --- Backend generated models (trained at build time) ------------------------
+backend/models/*.pkl
+backend/models/*.joblib

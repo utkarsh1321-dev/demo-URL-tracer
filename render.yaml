@@ -20,7 +20,7 @@ services:
     region: singapore          # Closest Render region to Supabase ap-south-1 (Mumbai)
     plan: free                 # Upgrade to starter for persistent disk (ML model)
     rootDir: backend
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && python build_model.py
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1
     healthCheckPath: /api/health
     autoDeploy: true
