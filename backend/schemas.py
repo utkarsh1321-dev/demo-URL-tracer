@@ -1,6 +1,5 @@
 """
 schemas.py — Pydantic schemas for request validation and API responses.
-All structures are for SYNTHETIC / DEMO data only.
 """
 
 from __future__ import annotations
