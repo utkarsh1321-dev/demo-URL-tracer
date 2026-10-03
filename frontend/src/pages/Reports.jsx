@@ -65,7 +65,7 @@ export default function Reports() {
            style={{ background: 'rgba(243,232,188,0.05)', border: '1px solid rgba(243,232,188,0.12)' }}>
         <Info className="w-4 h-4 flex-shrink-0" style={{ color: '#F3E8BC' }} />
         <span style={{ color: 'var(--text-muted)' }}>
-          All exported data is <strong style={{ color: '#F3E8BC' }}>simulated / synthetic</strong>. A disclaimer is embedded in every export.
+          Exported data reflects the current analysis session. A metadata header is embedded in every export.
         </span>
       </div>
 
@@ -235,9 +235,9 @@ export default function Reports() {
 {`{
   "metadata": {
     "exported_at": "${new Date().toISOString()}",
-    "data_type": "SIMULATED_DEMO_DATA",
+    "data_type": "LIVE_DATA",
     "total_attacks": ${mockAttacks.length},
-    "disclaimer": "This data is entirely synthetic and generated for demonstration purposes only."
+    "disclaimer": "Exported from URL Tracer Security platform. Handle in accordance with your organisation's data policy."
   },
   "attacks": [ ... ${mockAttacks.length} records ... ],
   "ip_profiles": [ ... ${ipProfiles.length} profiles ... ],

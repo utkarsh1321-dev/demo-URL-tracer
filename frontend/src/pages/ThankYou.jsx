@@ -53,7 +53,7 @@ export default function ThankYou() {
           We'll get back to you as soon as possible.
         </p>
         <p className="text-xs font-mono mb-8" style={{ color: 'var(--text-muted)' }}>
-          STATUS: SUBMITTED · DEMO_PROTOTYPE · NO_REAL_DATA_STORED
+          STATUS: SUBMITTED · NO_REAL_DATA_STORED
         </p>
 
         {/* Countdown */}

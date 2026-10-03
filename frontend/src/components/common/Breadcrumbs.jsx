@@ -13,7 +13,7 @@ const ROUTE_LABELS = {
   'privacy':         'Privacy Policy',
 };
 
-const BASE_URL = 'https://url-tracer-demo.example.com';
+const BASE_URL = 'https://url-tracer.example.com';
 
 export default function Breadcrumbs() {
   const { pathname } = useLocation();

@@ -142,7 +142,7 @@ export default function IPIntelligence() {
         {/* Quick IPs */}
         <div className="mt-4">
           <p className="text-[11px] font-mono uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>
-            Demo IPs — click to load:
+            Example IPs — click to load:
           </p>
           <div className="flex flex-wrap gap-2">
             {KNOWN_IPS.map(ip => (
@@ -165,15 +165,6 @@ export default function IPIntelligence() {
         </div>
       </div>
 
-      {/* ── Simulated data notice ─────────────────────── */}
-      <div className="flex items-center gap-2 text-xs rounded-lg px-4 py-2.5"
-           style={{ background: 'rgba(243,232,188,0.05)', border: '1px solid rgba(243,232,188,0.12)' }}>
-        <Info className="w-4 h-4 flex-shrink-0" style={{ color: '#F3E8BC' }} />
-        <span style={{ color: 'var(--text-muted)' }}>
-          All IP data is <strong style={{ color: '#F3E8BC' }}>100% simulated</strong>. Fictional private addresses — not real threat intelligence.
-        </span>
-      </div>
-
       {/* Loading / Error */}
       {loading && <LoadingSpinner message="Analysing IP..." />}
       {error && !loading && <EmptyState title="IP Not Found" message={error} icon="search" />}
@@ -191,7 +182,6 @@ export default function IPIntelligence() {
                 <div className="flex items-center gap-3 mb-2">
                   <span className="text-2xl font-bold font-mono" style={{ color: '#F3E8BC' }}>{profile.ip}</span>
                   <RiskBadge severity={profile.risk_level === 'CRITICAL' ? 'CRITICAL' : profile.risk_level} />
-                  <span className="chip">SIMULATED</span>
                 </div>
                 <p className="text-xs font-mono mb-5" style={{ color: 'var(--text-muted)' }}>{profile.hostname}</p>
 
@@ -318,7 +308,7 @@ export default function IPIntelligence() {
       {!profile && !loading && !error && (
         <EmptyState
           title="Enter an IP address"
-          message="Type a synthetic IP above or click one of the demo IPs to see a full risk profile."
+          message="Type an IP address above or click one of the example IPs to see a full risk profile."
           icon="search"
         />
       )}

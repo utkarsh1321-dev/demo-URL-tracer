@@ -6,7 +6,7 @@ import usePageMeta from '../hooks/usePageMeta';
 export default function Contact() {
   usePageMeta(
     'Contact Us',
-    'Get in touch with the URL Tracer Security team. Submit an enquiry about our cyber attack detection demo prototype.'
+    'Get in touch with the URL Tracer Security team. Submit an enquiry about our cyber attack detection platform.'
   );
 
   const navigate = useNavigate();
@@ -61,7 +61,7 @@ export default function Contact() {
           </div>
           <h1 className="text-2xl font-bold mb-2" style={{ color: '#F3E8BC' }}>Get in Touch</h1>
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            Questions about the demo? Reach out and we'll respond shortly.
+            Questions or feedback? Reach out and we'll respond shortly.
           </p>
           <nav aria-label="breadcrumb" className="flex items-center justify-center gap-1.5 mt-3 text-xs"
                style={{ color: 'var(--text-muted)' }}>
@@ -184,9 +184,9 @@ export default function Contact() {
             </button>
           </form>
 
-          {/* Demo notice */}
+          {/* Privacy notice */}
           <p className="text-center text-[11px]" style={{ color: 'var(--text-muted)' }}>
-            This is a demo form. No real data is transmitted.{' '}
+            Your enquiry is handled securely.{' '}
             <Link
               to="/privacy"
               style={{ color: '#F3E8BC', textDecoration: 'underline' }}

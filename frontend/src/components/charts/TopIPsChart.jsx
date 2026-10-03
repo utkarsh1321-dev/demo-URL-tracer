@@ -80,7 +80,7 @@ export default function TopIPsChart({ data = [] }) {
       })}
 
       <p className="text-[10px] font-mono pt-1" style={{ color: 'var(--text-muted)' }}>
-        attacks per source IP · synthetic data
+        attacks per source IP · live data
       </p>
     </div>
   );

@@ -14,7 +14,7 @@ const PAGE_META = {
 
 export default function Header({ onMenuClick }) {
   const { pathname } = useLocation();
-  const info = PAGE_META[pathname] ?? { title: 'URL Tracer Security', subtitle: 'Demo Prototype' };
+  const info = PAGE_META[pathname] ?? { title: 'URL Tracer Security', subtitle: 'Advanced threat intelligence platform' };
   const [now, setNow] = useState(new Date());
 
   // Tick clock every second
@@ -68,14 +68,6 @@ export default function Header({ onMenuClick }) {
           <span className="live-dot" />
           <span className="text-xs font-medium" style={{ color: '#4ade80' }}>System Operational</span>
         </div>
-
-        {/* Demo banner */}
-        <div className="demo-banner hidden xs:flex">
-          <AlertTriangle className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">DEMO / SIMULATED DATA</span>
-          <span className="sm:hidden">DEMO</span>
-        </div>
-
         {/* Clock */}
         <div
           className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono"

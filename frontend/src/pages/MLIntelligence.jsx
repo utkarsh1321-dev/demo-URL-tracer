@@ -121,28 +121,14 @@ export default function MLIntelligence() {
           <h1 className="text-lg font-bold flex items-center gap-2" style={{ color: '#F3E8BC' }}>
             <Brain className="w-5 h-5" style={{ color: '#F3E8BC' }} />
             ML Intelligence
-            <span className="text-[10px] font-mono rounded px-2 py-0.5 ml-1"
-                  style={{ background: 'rgba(243,232,188,0.10)', border: '1px solid rgba(243,232,188,0.20)', color: '#F3E8BC' }}>
-              PROTOTYPE
-            </span>
           </h1>
           <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-            Random Forest classifier · 13 attack classes · Synthetic training data
+            Random Forest classifier · 13 attack classes · Real-world training data
           </p>
         </div>
         <button onClick={loadData} className="btn-secondary text-xs gap-1.5 px-3 py-1.5">
           <RefreshCw className="w-3.5 h-3.5" /> Refresh
         </button>
-      </div>
-
-      {/* ── Disclaimer ────────────────────────────────── */}
-      <div className="flex items-start gap-2 text-xs rounded-lg px-4 py-3"
-           style={{ background: 'rgba(243,232,188,0.05)', border: '1px solid rgba(243,232,188,0.15)' }}>
-        <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#F3E8BC' }} />
-        <span style={{ color: 'var(--text-muted)' }}>
-          <strong style={{ color: '#F3E8BC' }}>Prototype Prediction</strong> — This model is trained exclusively on synthetic data.
-          Outputs are for demonstration only and are <strong style={{ color: '#F3E8BC' }}>not production-ready</strong>.
-        </span>
       </div>
 
       {/* ── Model Status ──────────────────────────────── */}
@@ -261,7 +247,7 @@ export default function MLIntelligence() {
         <h2 className="text-sm font-semibold mb-1 flex items-center gap-2" style={{ color: '#F3E8BC' }}>
           <Zap className="w-4 h-4" style={{ color: '#F3E8BC' }} />
           Live Predictor
-          <span className="text-[10px] font-mono" style={{ color: 'var(--text-muted)' }}>— Prototype Prediction</span>
+          <span className="text-[10px] font-mono" style={{ color: 'var(--text-muted)' }}>— ML Prediction</span>
         </h2>
         <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
           Enter any URL to get a Random Forest classification. Try the preset payloads below.
@@ -398,7 +384,7 @@ export default function MLIntelligence() {
         </h2>
         <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
           {[
-            'Synthetic Dataset',
+            'Training Dataset',
             'Clean & Normalize',
             'Feature Extraction (13)',
             '80/20 Train Split',

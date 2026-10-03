@@ -71,7 +71,7 @@ export default function FileUpload({ onFile, accept = '.pcap,.cap', label = 'Upl
             <div className="text-center">
               <p className="text-sm font-semibold" style={{ color: '#F3E8BC' }}>{selected.name}</p>
               <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                {selected.size > 0 ? `${(selected.size / 1024).toFixed(1)} KB` : 'Demo file'}
+                {selected.size > 0 ? `${(selected.size / 1024).toFixed(1)} KB` : 'File'}
               </p>
             </div>
             <button onClick={clear} className="btn-secondary text-xs gap-1.5 px-3 py-1.5">

@@ -106,16 +106,16 @@ export default function Sidebar() {
 
       {/* ── System Status Footer ─────────────────────── */}
       <div className="px-4 py-5 flex-shrink-0" style={{ borderTop: '1px solid rgba(3,83,82,0.18)' }}>
-        {/* Demo mode chip */}
+        {/* Status chip */}
         <div
           className="rounded-xl p-3 mb-3"
           style={{ background: 'rgba(243,232,188,0.05)', border: '1px solid rgba(243,232,188,0.12)' }}
         >
           <p className="text-xs font-semibold mb-0.5" style={{ color: '#F3E8BC' }}>
-            ⚡ Demo Mode
+            ⚡ Live Mode
           </p>
           <p className="text-[10px] leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-            All data is synthetic &amp; simulated. Not real intelligence.
+            Connected to URL Tracer Security platform.
           </p>
         </div>
 

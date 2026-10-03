@@ -148,13 +148,6 @@ function AttackDetail({ attack, onClose }) {
               Block IP Address
             </div>
           </div>
-
-          {/* Simulated notice */}
-          <div className="flex items-start gap-2 rounded-lg px-3 py-2.5 text-xs"
-               style={{ background: 'rgba(243,232,188,0.05)', border: '1px solid rgba(243,232,188,0.12)' }}>
-            <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: '#F3E8BC' }} />
-            <span style={{ color: 'var(--text-muted)' }}>Simulated / synthetic data. Not real intelligence.</span>
-          </div>
         </div>
 
         {/* Footer */}
