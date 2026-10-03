@@ -33,7 +33,7 @@
     "url_entropy",
     "hostname_digit_ratio"
   ],
-  "training_date": "2026-10-03T19:35:30.797410+00:00",
+  "training_date": "2026-10-03T19:52:53.579621+00:00",
   "train_samples": 480,
   "test_samples": 120,
   "labels": {

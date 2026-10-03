@@ -17,55 +17,53 @@ services:
     name: url-tracer-backend
     runtime: python
     pythonVersion: "3.11.9"       # Pin to 3.11 — stable, all wheels pre-built.
-    region: singapore          # Closest Render region to Supabase ap-south-1 (Mumbai)
-    plan: free                 # Upgrade to starter for persistent disk (ML model)
+    region: singapore
+    plan: free
     rootDir: backend
+    # build_model.py trains the ML model DURING the build step.
+    # Model is saved to backend/models/url_phishing_model.pkl before uvicorn starts.
     buildCommand: pip install -r requirements.txt && python build_model.py
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1
     healthCheckPath: /api/health
     autoDeploy: true
 
     envVars:
-      # ── Python version — prevents maturin/Rust build failures on Python 3.14 ──
+      # ── Python version ────────────────────────────────────────────────────
       - key: PYTHON_VERSION
         value: "3.11.9"
 
-      # ── Application ──────────────────────────────────────────────────
+      # ── Application ───────────────────────────────────────────────────────
       - key: APP_ENV
         value: production
 
-      # ── CORS — allow only the Vercel frontend ────────────────────────
+      # ── CORS — allow only the Vercel frontend ─────────────────────────────
       - key: ALLOWED_ORIGINS
         value: https://demo-url-tracer.vercel.app
 
-      # ── Supabase (public — safe to commit) ───────────────────────────
-      - key: SUPABASE_URL
-        value: https://ellixsfnmklvqirrcvvq.supabase.co
-
-      # ── Supabase anon key (public — enforced by RLS) ─────────────────
-      # Find in: Supabase Dashboard → Project Settings → API → anon/public
-      - key: SUPABASE_ANON_KEY
-        sync: false            # Set in Render Dashboard
-
-      # ── SECRETS — must be set in Render Dashboard manually ───────────
-      # Supabase Dashboard → Project Settings → API → JWT Secret
-      - key: SUPABASE_JWT_SECRET
-        sync: false
-
-      # Supabase Dashboard → Project Settings → API → service_role key
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
-
-      # Supabase Dashboard → Project Settings → Database → Connection string (URI)
-      # Database password only — no need to build a URL yourself
-      - key: DB_PASSWORD
-        sync: false            # Set ONLY the raw password in Render Dashboard
-
-      # ── Supabase (public — safe to commit) ───────────────────────────────────
+      # ── Supabase (public — safe to commit) ────────────────────────────────
       - key: SUPABASE_URL
         value: https://xzkseyfhcadeehwzglah.supabase.co
 
-      # ── Supabase DB connection components (static — safe to commit) ───────
+      # Supabase anon key (public — enforced by RLS)
+      # Find in: Supabase → Project Settings → API → anon/public
+      - key: SUPABASE_ANON_KEY
+        sync: false
+
+      # ── Secrets — set manually in Render Dashboard ─────────────────────────
+      # Supabase → Project Settings → API → JWT Secret
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+
+      # Supabase → Project Settings → API → service_role key
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+
+      # ── Database (component-based — avoids URL encoding issues) ───────────
+      # Only DB_PASSWORD needs to be set in the Render Dashboard.
+      # All other DB fields are static and safe to commit.
+      - key: DB_PASSWORD
+        sync: false
+
       - key: DB_HOST
         value: aws-0-ap-northeast-2.pooler.supabase.com
 
@@ -78,14 +76,11 @@ services:
       - key: DB_USER
         value: postgres.xzkseyfhcadeehwzglah
 
-      # ── ML Model ─────────────────────────────────────────────────────
-      # Path relative to backend/ where the .pkl model file is stored.
-      # On Render free plan: model is included in the build via git-tracked
-      # model_info.json + pre-built artifact uploaded at deploy time.
-      # On paid plan: use a persistent disk mounted at /data/models/
-      - key: MODEL_PATH
-        value: ./ML/ml_data/models/rf_model.pkl
-
-      # ── Logging ──────────────────────────────────────────────────────
+      # ── Logging ───────────────────────────────────────────────────────────
       - key: LOG_LEVEL
         value: INFO
+
+      # NOTE: MODEL_PATH is intentionally NOT set here.
+      # build_model.py saves to backend/models/url_phishing_model.pkl
+      # url_model.py finds it automatically via Path(__file__).parent.parent / "models"
+      # Setting MODEL_PATH would override this and break model loading.

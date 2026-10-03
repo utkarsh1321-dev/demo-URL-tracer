@@ -249,37 +249,58 @@ def train(quick: bool = False) -> None:
     sys.path.insert(0, str(_HERE))
     from analysis.features import extract_features, features_to_ml_vector
 
-    # ── Step 2: Generate dataset ─────────────────────────────────────────────
-    log.info("[2/5] Generating synthetic labeled dataset (quick=%s)...", quick)
-    raw_urls, raw_labels = _build_dataset(quick=quick)
-    log.info("      Total URLs generated: %d", len(raw_urls))
+    # ── Step 2 & 3: Load training data ───────────────────────────────────────
+    _TRAINING_NPZ = _HERE / "training_data" / "training_data.npz"
+    label_names   = {0: "BENIGN", 1: "PHISHING", 2: "MALWARE"}
 
-    # ── Step 3: Extract features using PRODUCTION feature extractor ───────────
-    log.info("[3/5] Extracting features (28-dim vector per URL)...")
-    log.info("      Using analysis/features.py — same as inference path")
+    if _TRAINING_NPZ.exists():
+        log.info("[2/5] Loading REAL Kaggle dataset from %s ...", _TRAINING_NPZ)
+        data   = np.load(_TRAINING_NPZ)
+        X_real = data["X"].astype(np.float32)
+        y_real = data["y"].astype(np.int32)
+        log.info("      Real data loaded: %d samples, %d features", *X_real.shape)
+        for lbl, name in label_names.items():
+            log.info("      %s: %d samples", name, int((y_real == lbl).sum()))
 
-    X_list, y_list = [], []
-    skipped = 0
-    for url, label in zip(raw_urls, raw_labels):
-        try:
-            feats = extract_features(url)
-            vec   = features_to_ml_vector(feats)
-            X_list.append(vec)
-            y_list.append(label)
-        except Exception as exc:
-            skipped += 1
-            log.debug("Skipped %s: %s", url[:60], exc)
+        log.info("[3/5] Adding synthetic samples for additional robustness...")
+        raw_urls, raw_labels = _build_dataset(quick=quick)
+        X_syn, y_syn = [], []
+        for url, label in zip(raw_urls, raw_labels):
+            try:
+                X_syn.append(features_to_ml_vector(extract_features(url)))
+                y_syn.append(label)
+            except Exception:
+                pass
+        X_syn = np.array(X_syn, dtype=np.float32)
+        y_syn = np.array(y_syn, dtype=np.int32)
+        log.info("      Synthetic: %d samples", len(X_syn))
 
-    if skipped:
-        log.warning("      Skipped %d URLs due to extraction errors", skipped)
+        X = np.vstack([X_real, X_syn])
+        y = np.concatenate([y_real, y_syn])
+        log.info("      Combined: %d total samples", len(X))
+    else:
+        log.info("[2/5] No real dataset found — using synthetic data only.")
+        log.info("      To train on real Kaggle data, run:")
+        log.info("        python prepare_training_data.py --input malicious_phish.csv")
+        log.info("      Then commit training_data/training_data.npz to git.")
 
-    X = np.array(X_list, dtype=np.float32)
-    y = np.array(y_list, dtype=np.int32)
-    log.info("      Feature matrix: %s  Labels: %s", X.shape, y.shape)
+        log.info("[3/5] Extracting features from synthetic URLs...")
+        raw_urls, raw_labels = _build_dataset(quick=quick)
+        X_list, y_list, skipped = [], [], 0
+        for url, label in zip(raw_urls, raw_labels):
+            try:
+                X_list.append(features_to_ml_vector(extract_features(url)))
+                y_list.append(label)
+            except Exception:
+                skipped += 1
+        if skipped:
+            log.warning("      Skipped %d URLs", skipped)
+        X = np.array(X_list, dtype=np.float32)
+        y = np.array(y_list, dtype=np.int32)
 
-    label_names = {0: "BENIGN", 1: "PHISHING", 2: "MALWARE"}
+    log.info("      Final dataset: %d samples, %d features", *X.shape)
     for lbl, name in label_names.items():
-        log.info("      %s: %d samples", name, int((y == lbl).sum()))
+        log.info("      [%s] %d samples", name, int((y == lbl).sum()))
 
     # ── Step 4: Train / test split + train ───────────────────────────────────
     log.info("[4/5] Training RandomForest (n_estimators=200)...")
